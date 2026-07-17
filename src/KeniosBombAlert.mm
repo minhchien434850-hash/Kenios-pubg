@@ -61,7 +61,8 @@
         bomb.radius = *(float *)(actor + o.ExplosionRadius);
         bomb.timeToExplode = *(float *)(actor + o.ExplosionTime);
         bomb.isActive = YES;
-        [self.activeBombs addObject:[NSValue valueWithBytes:&bomb objCType:@encode(KeniosBomb)]];
+        NSData *bombData = [NSData dataWithBytes:&bomb length:sizeof(KeniosBomb)];
+        [self.activeBombs addObject:bombData];
         
         if (self.config.vibrateAlert) AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
         [[NSNotificationCenter defaultCenter] postNotificationName:KENIOS_NOTIF_BOMB_DETECTED object:nil];

@@ -44,10 +44,7 @@
     KeniosMatrix4x4 viewMatrix = *(KeniosMatrix4x4 *)(cameraManager + o.ViewMatrix);
     
     [self scanPlayers:localPawn localTeamID:localTeamID cameraPos:cameraPos];
-    if ([self findBestTarget:cameraPos viewMatrix:viewMatrix]) {
-        KeniosPlayer target = self.selectedTarget;
-        [self aimAtTarget:&target cameraPos:cameraPos localController:localController];
-    }
+    if ([self findBestTarget:cameraPos viewMatrix:viewMatrix]) [self aimAtTarget:&_selectedTarget cameraPos:cameraPos localController:localController];
 }
 
 - (uint64_t)getLocalPlayerController {
