@@ -1,0 +1,14 @@
+PORT=3000
+NODE_ENV=production
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=kenios_admin
+DB_PASSWORD=Kenios@2026!Secure#DB
+DB_NAME=kenios_hax
+JWT_SECRET=KeniosHax_2026_SuperSecure_JWT_Secret_Key_iOS16_26
+JWT_EXPIRE=7d
+ADMIN_EMAIL=admin@kenios-hax.dev
+ENCRYPTION_KEY=KeniosHax_2026_AES256_Encryption_Key_iOS16_26!!
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+ALLOWED_ORIGINS=https://kenios-hax.dev
