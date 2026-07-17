@@ -26,5 +26,11 @@ all: KeniosHax.dylib
 KeniosHax.dylib: $(SOURCES)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
+package: KeniosHax.dylib
+	mkdir -p .theos/obj/debug/arm64 .theos/obj/debug/arm64e
+	cp KeniosHax.dylib .theos/obj/debug/arm64/KeniosHax.dylib
+	cp KeniosHax.dylib .theos/obj/debug/arm64e/KeniosHax.dylib
+
 clean:
 	rm -f KeniosHax.dylib
+	rm -rf .theos
