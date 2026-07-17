@@ -21,7 +21,9 @@
 }
 
 - (void)clearActiveBombs {
-    [self.activeBombs removeAllObjects];
+    @synchronized (self.activeBombs) {
+        [self.activeBombs removeAllObjects];
+    }
 }
 
 - (void)scanForBombs {
@@ -62,7 +64,9 @@
         bomb.timeToExplode = *(float *)(actor + o.ExplosionTime);
         bomb.isActive = YES;
         NSData *bombData = [NSData dataWithBytes:&bomb length:sizeof(KeniosBomb)];
-        [self.activeBombs addObject:bombData];
+        @synchronized (self.activeBombs) {
+            [self.activeBombs addObject:bombData];
+        }
         
         if (self.config.vibrateAlert) AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
         [[NSNotificationCenter defaultCenter] postNotificationName:KENIOS_NOTIF_BOMB_DETECTED object:nil];
