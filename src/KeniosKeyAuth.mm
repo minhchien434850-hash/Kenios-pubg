@@ -2,16 +2,18 @@
 #import "KeniosConfig.h"
 
 @implementation KeniosKeyData
++ (BOOL)supportsSecureCoding { return YES; }
 - (instancetype)initWithCoder:(NSCoder *)coder {
     self = [super init];
     if (self) {
-        self.key = [coder decodeObjectForKey:@"key"];
-        self.token = [coder decodeObjectForKey:@"token"];
+        self.key = [coder decodeObjectOfClass:[NSString class] forKey:@"key"];
+        self.token = [coder decodeObjectOfClass:[NSString class] forKey:@"token"];
         self.type = [coder decodeIntForKey:@"type"];
         self.maxDevices = [coder decodeIntForKey:@"maxDevices"];
-        self.expiryDate = [coder decodeObjectForKey:@"expiryDate"];
+        self.expiryDate = [coder decodeObjectOfClass:[NSDate class] forKey:@"expiryDate"];
         self.isValid = [coder decodeBoolForKey:@"isValid"];
-        self.features = [coder decodeObjectForKey:@"features"];
+        NSSet *allowed = [NSSet setWithObjects:[NSArray class], [NSString class], nil];
+        self.features = [coder decodeObjectOfClasses:allowed forKey:@"features"];
     }
     return self;
 }
@@ -139,7 +141,7 @@ static UIViewController *KeniosTopViewController(void) {
     [[NSFileManager defaultManager] createDirectoryAtPath:basePath withIntermediateDirectories:YES attributes:nil error:nil];
     NSString *path = [basePath stringByAppendingPathComponent:@"key.dat"];
     NSError *error = nil;
-    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:self.currentKey requiringSecureCoding:NO error:&error];
+    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:self.currentKey requiringSecureCoding:YES error:&error];
     return data && [data writeToFile:path options:NSDataWritingAtomic error:&error];
 }
 
@@ -148,11 +150,8 @@ static UIViewController *KeniosTopViewController(void) {
     NSData *data = [NSData dataWithContentsOfFile:path];
     if (!data) return NO;
     NSError *error = nil;
-    NSKeyedUnarchiver *unarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:data error:&error];
-    if (!unarchiver) return NO;
-    unarchiver.requiresSecureCoding = NO;
-    self.currentKey = [unarchiver decodeObjectForKey:NSKeyedArchiveRootObjectKey];
-    [unarchiver finishDecoding];
+    self.currentKey = [NSKeyedUnarchiver unarchivedObjectOfClass:[KeniosKeyData class] fromData:data error:&error];
+    if (error) return NO;
     [self checkKeyExpiry];
     return self.currentKey != nil;
 }

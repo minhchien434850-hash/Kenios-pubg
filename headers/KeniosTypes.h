@@ -62,7 +62,7 @@
 @property (nonatomic, assign) int killLimit, headshotLimit;
 @end
 
-@interface KeniosKeyData : NSObject <NSCoding>
+@interface KeniosKeyData : NSObject <NSSecureCoding>
 @property (nonatomic, strong) NSString *key, *token;
 @property (nonatomic, assign) int type, maxDevices;
 @property (nonatomic, strong) NSDate *expiryDate;
