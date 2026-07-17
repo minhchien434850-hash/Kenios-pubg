@@ -6,7 +6,7 @@ echo "╔═══════════════════════�
 echo "║   🔥 KENIOS HAX Build System 🔥         ║"
 echo "║   iOS 16.0 - 26.5 Support               ║"
 echo "╚══════════════════════════════════════════╝"
-if [ ! -d "$THEOS" ]; then echo "❌ THEOS not found!"; exit 1; fi
+if [ -z "${THEOS:-}" ] || [ ! -d "${THEOS:-}" ]; then echo "❌ THEOS not found!"; exit 1; fi
 echo "✅ THEOS: $THEOS"
 make clean 2>/dev/null
 make package
