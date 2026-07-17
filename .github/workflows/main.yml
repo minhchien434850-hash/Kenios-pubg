@@ -85,7 +85,7 @@ jobs:
             "config/config.json"
             "config/languages.json"
             "config/menu.json"
-            "src/KeniosLoader.mm"
+            "src/KENIOS_HAX_FULL.mm"
             "src/KeniosMenu.mm"
             "src/KeniosAimbot.mm"
             "server/server.js"
