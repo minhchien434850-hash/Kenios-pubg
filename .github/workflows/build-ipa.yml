@@ -1,0 +1,48 @@
+name: KENIOS HAX - Build IPA
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+env:
+  PROJECT_NAME: KeniosHax
+  IPA_NAME: KENIOS_Hax
+  VERSION: 4.5.0
+
+jobs:
+  build-ipa:
+    name: 🍎 Build IPA
+    runs-on: macos-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Theos
+        run: |
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos --depth 1
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          echo "PATH=$HOME/theos/bin:$PATH" >> $GITHUB_ENV
+      
+      - name: Build Tweak
+        run: |
+          export THEOS=$HOME/theos
+          make clean 2>/dev/null || true
+          make package
+      
+      - name: Create IPA
+        run: |
+          mkdir -p build/Payload/PUBGM.app packages
+          [ -f ".theos/obj/debug/arm64/${{ env.PROJECT_NAME }}.dylib" ] && cp .theos/obj/debug/arm64/${{ env.PROJECT_NAME }}.dylib build/Payload/PUBGM.app/
+          mkdir -p build/Payload/PUBGM.app/KeniosConfig
+          cp config/*.json build/Payload/PUBGM.app/KeniosConfig/ 2>/dev/null || true
+          cd build && zip -qr ../packages/${{ env.IPA_NAME }}_v${{ env.VERSION }}.ipa Payload/ && cd ..
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.IPA_NAME }}_v${{ env.VERSION }}
+          path: packages/*.ipa
+          retention-days: 30
