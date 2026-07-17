@@ -1,0 +1,22 @@
+name: KENIOS HAX Auto Update
+on:
+  schedule:
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+jobs:
+  check-update:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with: { python-version: '3.11' }
+    - run: pip install requests
+    - name: Check Game Version
+      run: python3 check_update.py
+    - name: Commit Changes
+      run: |
+        git config user.name "KENIOS Bot"
+        git config user.email "bot@kenios-hax.dev"
+        git add -A
+        git diff --quiet || git commit -m "[AUTO] Update check $(date +'%Y-%m-%d %H:%M')"
+        git push
