@@ -176,3 +176,14 @@ make package
 make install
 
 # 6. Respring
+
+# 7. Tạo IPA để ký bằng eSign (không jailbreak install trực tiếp)
+#    - Chuẩn bị file IPA gốc PUBG (ví dụ: PUBG_Base.ipa)
+#    - Inject dylib + config vào IPA gốc
+./scripts/inject.sh /duong_dan/PUBG_Base.ipa
+
+#    Kết quả: KENIOS_Hax_Injected_unsigned.ipa
+#    Sau đó mở eSign:
+#    1) Import certificate + mobileprovision của bạn
+#    2) Chọn file KENIOS_Hax_Injected_unsigned.ipa để Sign
+#    3) Install IPA đã ký lên máy
