@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "key_system": {
+    "enabled": true,
+    "server_url": "https://api.kenios-hax.dev",
+    "validate_endpoint": "/api/validate-key",
+    "heartbeat_endpoint": "/api/heartbeat",
+    "key_format": "XXXX-XXXX-XXXX-XXXX",
+    "key_length": 19,
+    "key_prefix": "KEN-",
+    "allow_offline": true,
+    "max_offline_days": 3
+  },
+  "key_types": {
+    "trial": {"name": "Trial", "duration_days": 3, "max_devices": 1, "features": ["aimbot_basic", "esp_basic"], "price": 0},
+    "weekly": {"name": "Weekly", "duration_days": 7, "max_devices": 1, "features": ["aimbot_full", "esp_full", "magic_bullet", "skin_changer"], "price": 9.99},
+    "monthly": {"name": "Monthly", "duration_days": 30, "max_devices": 2, "features": ["all_features"], "price": 24.99},
+    "lifetime": {"name": "Lifetime", "duration_days": 36500, "max_devices": 3, "features": ["all_features", "priority_support", "beta_access"], "price": 99.99},
+    "admin": {"name": "Admin", "duration_days": 36500, "max_devices": 10, "features": ["all_features", "admin_panel", "key_management"], "price": 0}
+  }
+}
