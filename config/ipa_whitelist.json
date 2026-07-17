@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-07-17T12:00:00Z",
+  "allowed_bundle_ids": ["com.tencent.ig", "com.tencent.pubgm", "com.tencent.pubgmhd"],
+  "allowed_versions": ["4.5.0", "4.4.0", "4.3.0", "4.2.0", "4.1.0"],
+  "ipa_checksums": {
+    "com.tencent.ig": {
+      "4.5.0": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "md5": "d41d8cd98f00b204e9800998ecf8427e",
+        "file_size": 3245678901,
+        "bundle_version": "4.5.0.20715"
+      }
+    }
+  },
+  "validation_rules": {
+    "check_bundle_id": true,
+    "check_version": true,
+    "check_checksum": true,
+    "check_file_size": true,
+    "check_signing": false,
+    "allow_jailbreak": true,
+    "block_simulator": true,
+    "block_debug_build": true,
+    "require_original_ipa": true
+  },
+  "blocked_ipa_modifications": ["cracked_ipa", "modified_binary", "injected_dylib", "unsigned_app", "enterprise_cert"]
+}
