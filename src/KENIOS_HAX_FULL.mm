@@ -1,7 +1,22 @@
 // =============================================
 // KENIOS HAX - MAIN ENTRY POINT (iOS 16.0-26.5)
+// FIXED VERSION
 // =============================================
 
+#import <UIKit/UIKit.h>
+#import <Foundation/Foundation.h>
+#import <QuartzCore/QuartzCore.h>
+#import <mach-o/dyld.h>
+
+// --- Định nghĩa macro thiếu ---
+#define KENIOS_VERSION @"1.0.0"
+#define KENIOS_IOS_MIN @"16.0"
+#define KENIOS_IOS_MAX @"26.5"
+#define KENIOS_LOG(fmt, ...) NSLog((@"[KENIOS] " fmt), ##__VA_ARGS__)
+#define KENIOS_NOTIF_KEY_VALIDATED @"KeniosKeyValidated"
+#define KENIOS_NOTIF_KEY_EXPIRED   @"KeniosKeyExpired"
+
+// --- Import các header của module ---
 #import "KeniosCommon.h"
 #import "KeniosConfig.h"
 #import "KeniosOffsets.h"
@@ -9,6 +24,19 @@
 #import "KeniosAntiBanPro.h"
 #import "KeniosIPAValidator.h"
 
+// Import các class con (thay vì chỉ @class)
+#import "KeniosAimbot.h"
+#import "KeniosESP.h"
+#import "KeniosMagicBullet.h"
+#import "KeniosSkinChanger.h"
+#import "KeniosFPS.h"
+#import "KeniosMenu.h"
+#import "KeniosNetwork.h"
+#import "KeniosBombAlert.h"
+#import "KeniosVehicleMaster.h"
+#import "KeniosEventShop.h"
+
+// --- Biến toàn cục ---
 uint64_t g_UE4Base = 0;
 uint64_t g_GWorld = 0;
 BOOL g_isHackInitialized = NO;
@@ -22,11 +50,9 @@ static NSTimer *g_anticheatTimer;
 static NSTimer *g_fpsTimer;
 static int g_currentFPS = 60;
 static int g_currentPing = 0;
+static CFTimeInterval g_lastFPSTime = 0;  // <<< Thêm biến riêng cho FPS
 
-@class KeniosAimbot, KeniosESP, KeniosMagicBullet, KeniosSkinChanger;
-@class KeniosFPS, KeniosMenu, KeniosNetwork, KeniosBombAlert;
-@class KeniosVehicleMaster, KeniosEventShop;
-
+// --- Main Controller ---
 @interface KeniosMainController : NSObject
 + (instancetype)sharedInstance;
 - (void)initialize;
@@ -44,7 +70,6 @@ static int g_currentPing = 0;
 }
 
 - (void)initialize {
-    // Lấy phiên bản iOS
     g_iosVersion = [[UIDevice currentDevice] systemVersion];
     KENIOS_LOG(@"========================================");
     KENIOS_LOG(@"  KENIOS HAX v%@ Initializing...", KENIOS_VERSION);
@@ -52,13 +77,11 @@ static int g_currentPing = 0;
     KENIOS_LOG(@"  Support: iOS %@ - %@", KENIOS_IOS_MIN, KENIOS_IOS_MAX);
     KENIOS_LOG(@"========================================");
     
-    // Kiểm tra phiên bản iOS
     if (![self checkiOSVersion]) {
         [self showError:@"iOS không được hỗ trợ!\nYêu cầu iOS 16.0 - 26.5"];
         return;
     }
     
-    // Tìm UE4 base
     [self findUE4Base];
     if (g_UE4Base == 0) {
         [self showError:@"Không tìm thấy game engine!"];
@@ -66,18 +89,24 @@ static int g_currentPing = 0;
     }
     KENIOS_LOG(@"[1/10] UE4 Base: 0x%llx", g_UE4Base);
     
-    // Load offsets
+    // Tạo thư mục KeniosHax
     NSString *docPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
     NSString *keniosPath = [docPath stringByAppendingPathComponent:@"KeniosHax"];
     [[NSFileManager defaultManager] createDirectoryAtPath:keniosPath withIntermediateDirectories:YES attributes:nil error:nil];
     
+    // Load offsets
     NSString *offsetPath = [keniosPath stringByAppendingPathComponent:@"offsets.json"];
     if (![[KeniosOffsets sharedInstance] loadFromJSON:offsetPath]) {
-        [[KeniosOffsets sharedInstance] loadFromJSON:[[NSBundle mainBundle] pathForResource:@"offsets" ofType:@"json"]];
+        NSString *bundlePath = [[NSBundle mainBundle] pathForResource:@"offsets" ofType:@"json"];
+        if (bundlePath) {
+            [[KeniosOffsets sharedInstance] loadFromJSON:bundlePath];
+        } else {
+            KENIOS_LOG(@"WARNING: offsets.json not found in bundle!");
+        }
     }
     KENIOS_LOG(@"[2/10] Offsets loaded");
     
-    // Load config
+    // Config
     [KeniosConfig sharedInstance].currentLanguage = @"vi";
     [[KeniosConfig sharedInstance] loadDefaults];
     NSString *configPath = [keniosPath stringByAppendingPathComponent:@"config.json"];
@@ -92,7 +121,7 @@ static int g_currentPing = 0;
     [[KeniosAntiBanPro sharedInstance] blockCrashReports];
     KENIOS_LOG(@"[4/10] Anti-Ban Pro activated");
     
-    // Kiểm tra IPA
+    // IPA validation (asynchronous)
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
         BOOL ipaValid = [[KeniosIPAValidator sharedInstance] validateCurrentIPA];
         g_isIPAValid = ipaValid;
@@ -114,7 +143,6 @@ static int g_currentPing = 0;
 }
 
 - (void)continueInit {
-    // Key check
     [[KeniosKeyAuth sharedInstance] loadKeyData];
     if (![[KeniosKeyAuth sharedInstance] isKeyValid]) {
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
@@ -129,14 +157,28 @@ static int g_currentPing = 0;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(onKeyExpired:) name:KENIOS_NOTIF_KEY_EXPIRED object:nil];
 }
 
-- (void)onKeyValidated:(NSNotification *)n { g_isKeyValid = YES; [self startAllModules]; }
-- (void)onKeyExpired:(NSNotification *)n { g_isKeyValid = NO; [self stopAllModules]; [[KeniosKeyAuth sharedInstance] showKeyInputDialog]; }
+- (void)onKeyValidated:(NSNotification *)n { 
+    g_isKeyValid = YES; 
+    [self startAllModules]; 
+}
+
+- (void)onKeyExpired:(NSNotification *)n { 
+    g_isKeyValid = NO; 
+    [self stopAllModules]; 
+    [[KeniosKeyAuth sharedInstance] showKeyInputDialog]; 
+}
 
 - (void)startAllModules {
     g_mainLoopTimer = [NSTimer scheduledTimerWithTimeInterval:1.0/60.0 repeats:YES block:^(NSTimer *t) { [self mainLoop]; }];
     g_heartbeatTimer = [NSTimer scheduledTimerWithTimeInterval:60.0 repeats:YES block:^(NSTimer *t) { [[KeniosKeyAuth sharedInstance] sendHeartbeat]; }];
     g_anticheatTimer = [NSTimer scheduledTimerWithTimeInterval:10.0 repeats:YES block:^(NSTimer *t) { [[KeniosAntiBanPro sharedInstance] detectAntiCheatModules]; }];
-    g_fpsTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 repeats:YES block:^(NSTimer *t) { g_currentFPS = (int)(1.0 / (CACurrentMediaTime() - g_currentFPS)); }];
+    g_fpsTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 repeats:YES block:^(NSTimer *t) {
+        CFTimeInterval now = CACurrentMediaTime();
+        if (g_lastFPSTime > 0) {
+            g_currentFPS = (int)(1.0 / (now - g_lastFPSTime));
+        }
+        g_lastFPSTime = now;
+    }];
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [[KeniosMenu sharedInstance] showMenu];
@@ -189,13 +231,25 @@ static int g_currentPing = 0;
     dispatch_async(dispatch_get_main_queue(), ^{
         UIAlertController *a = [UIAlertController alertControllerWithTitle:@"KENIOS HAX" message:msg preferredStyle:UIAlertControllerStyleAlert];
         [a addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-        [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:a animated:YES completion:nil];
+        // Lấy rootViewController an toàn hơn
+        UIViewController *rootVC = [UIApplication sharedApplication].windows.firstObject.rootViewController;
+        if (rootVC) {
+            [rootVC presentViewController:a animated:YES completion:nil];
+        } else {
+            // Fallback: log lỗi
+            KENIOS_LOG(@"ERROR: %@", msg);
+        }
     });
 }
 
-- (void)shutdown { [self stopAllModules]; [[KeniosAntiBanPro sharedInstance] stopMonitoring]; }
+- (void)shutdown { 
+    [self stopAllModules]; 
+    [[KeniosAntiBanPro sharedInstance] stopMonitoring]; 
+}
+
 @end
 
+// Logos constructor
 %ctor {
     @autoreleasepool {
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
