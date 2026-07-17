@@ -43,7 +43,11 @@ if (require.main === module) {
     setupDatabase()
         .then(() => process.exit(0))
         .catch((error) => {
-            console.error('Database setup failed:', error.message);
+            const nestedMessages = Array.isArray(error?.errors)
+                ? error.errors.map((item) => item?.message).filter(Boolean).join(' | ')
+                : '';
+            const message = nestedMessages || error?.message || String(error);
+            console.error('Database setup failed:', message);
             process.exit(1);
         });
 }
