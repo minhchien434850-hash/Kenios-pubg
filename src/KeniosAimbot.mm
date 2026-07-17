@@ -41,7 +41,7 @@
     KeniosVector3 cameraPos = *(KeniosVector3 *)(cameraManager + o.CameraCache);
     KeniosMatrix4x4 viewMatrix = *(KeniosMatrix4x4 *)(cameraManager + o.ViewMatrix);
     
-    [self scanPlayers:localPawn localTeamID:localTeamID];
+    [self scanPlayers:localPawn localTeamID:localTeamID cameraPos:cameraPos];
     KeniosPlayer *target = [self findBestTarget:cameraPos viewMatrix:viewMatrix];
     if (target) [self aimAtTarget:target cameraPos:cameraPos localController:localController];
 }
@@ -55,8 +55,16 @@
     return *(uint64_t *)localPlayers;
 }
 
-- (void)scanPlayers:(uint64_t)localPawn localTeamID:(int)localTeamID {
+- (void)freePlayerList {
+    for (NSValue *v in self.playerList) {
+        KeniosPlayer *p = (KeniosPlayer *)[v pointerValue];
+        if (p) free(p);
+    }
     [self.playerList removeAllObjects];
+}
+
+- (void)scanPlayers:(uint64_t)localPawn localTeamID:(int)localTeamID cameraPos:(KeniosVector3)cameraPos {
+    [self freePlayerList];
     KeniosOffsets *o = [KeniosOffsets sharedInstance];
     uint64_t persistentLevel = *(uint64_t *)(g_GWorld + o.PersistentLevel);
     if (!persistentLevel) return;
@@ -154,4 +162,5 @@
 }
 
 - (void)updateConfig:(KeniosAimbotConfig *)c { self.config = c; }
+- (void)dealloc { [self freePlayerList]; }
 @end

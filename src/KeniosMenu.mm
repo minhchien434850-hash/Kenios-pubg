@@ -8,6 +8,17 @@
 #import "KeniosSkinChanger.h"
 #import "KeniosAntiBanPro.h"
 
+static UIWindow *KeniosActiveWindow(void) {
+    for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+        if (scene.activationState != UISceneActivationStateForegroundActive) continue;
+        if (![scene isKindOfClass:[UIWindowScene class]]) continue;
+        for (UIWindow *window in ((UIWindowScene *)scene).windows) {
+            if (window.isKeyWindow) return window;
+        }
+    }
+    return [UIApplication sharedApplication].windows.firstObject;
+}
+
 @interface KeniosMenuView : UIView <UITableViewDelegate, UITableViewDataSource>
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, strong) NSMutableArray *sections;
@@ -248,7 +259,8 @@
     if (self.menuView) [self.menuView removeFromSuperview];
     self.menuView = [[KeniosMenuView alloc] initWithFrame:CGRectMake(10, 120, 320, 500)];
     self.menuView.alpha = 0;
-    [[UIApplication sharedApplication].keyWindow addSubview:self.menuView];
+    UIWindow *window = KeniosActiveWindow();
+    if (window) [window addSubview:self.menuView];
     [UIView animateWithDuration:0.3 animations:^{ self.menuView.alpha = 1; }];
 }
 

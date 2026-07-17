@@ -47,10 +47,6 @@ NSString *g_iosVersion = nil;
 static NSTimer *g_mainLoopTimer;
 static NSTimer *g_heartbeatTimer;
 static NSTimer *g_anticheatTimer;
-static NSTimer *g_fpsTimer;
-static int g_currentFPS = 60;
-static int g_currentPing = 0;
-static CFTimeInterval g_lastFPSTime = 0;  // <<< Thêm biến riêng cho FPS
 
 // --- Main Controller ---
 @interface KeniosMainController : NSObject
@@ -61,6 +57,22 @@ static CFTimeInterval g_lastFPSTime = 0;  // <<< Thêm biến riêng cho FPS
 @end
 
 @implementation KeniosMainController
+
+static UIViewController *KeniosTopViewController(void) {
+    UIWindow *activeWindow = nil;
+    for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+        if (scene.activationState != UISceneActivationStateForegroundActive) continue;
+        if (![scene isKindOfClass:[UIWindowScene class]]) continue;
+        for (UIWindow *window in ((UIWindowScene *)scene).windows) {
+            if (window.isKeyWindow) { activeWindow = window; break; }
+        }
+        if (activeWindow) break;
+    }
+    if (!activeWindow) activeWindow = [UIApplication sharedApplication].windows.firstObject;
+    UIViewController *vc = activeWindow.rootViewController;
+    while (vc.presentedViewController) vc = vc.presentedViewController;
+    return vc;
+}
 
 + (instancetype)sharedInstance {
     static KeniosMainController *instance = nil;
@@ -172,13 +184,6 @@ static CFTimeInterval g_lastFPSTime = 0;  // <<< Thêm biến riêng cho FPS
     g_mainLoopTimer = [NSTimer scheduledTimerWithTimeInterval:1.0/60.0 repeats:YES block:^(NSTimer *t) { [self mainLoop]; }];
     g_heartbeatTimer = [NSTimer scheduledTimerWithTimeInterval:60.0 repeats:YES block:^(NSTimer *t) { [[KeniosKeyAuth sharedInstance] sendHeartbeat]; }];
     g_anticheatTimer = [NSTimer scheduledTimerWithTimeInterval:10.0 repeats:YES block:^(NSTimer *t) { [[KeniosAntiBanPro sharedInstance] detectAntiCheatModules]; }];
-    g_fpsTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 repeats:YES block:^(NSTimer *t) {
-        CFTimeInterval now = CACurrentMediaTime();
-        if (g_lastFPSTime > 0) {
-            g_currentFPS = (int)(1.0 / (now - g_lastFPSTime));
-        }
-        g_lastFPSTime = now;
-    }];
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [[KeniosMenu sharedInstance] showMenu];
@@ -192,7 +197,6 @@ static CFTimeInterval g_lastFPSTime = 0;  // <<< Thêm biến riêng cho FPS
     [g_mainLoopTimer invalidate]; g_mainLoopTimer = nil;
     [g_heartbeatTimer invalidate]; g_heartbeatTimer = nil;
     [g_anticheatTimer invalidate]; g_anticheatTimer = nil;
-    [g_fpsTimer invalidate]; g_fpsTimer = nil;
     [[KeniosMenu sharedInstance] hideMenu];
     g_isHackInitialized = NO;
 }
@@ -200,6 +204,7 @@ static CFTimeInterval g_lastFPSTime = 0;  // <<< Thêm biến riêng cho FPS
 - (void)mainLoop {
     if (!g_isHackInitialized || !g_isKeyValid || !g_isIPAValid) return;
     @autoreleasepool {
+        [[KeniosFPS sharedInstance] updateFPS];
         KeniosOffsets *o = [KeniosOffsets sharedInstance];
         g_GWorld = *(uint64_t *)(g_UE4Base + o.GWorld);
         if (!g_GWorld) return;
@@ -231,12 +236,10 @@ static CFTimeInterval g_lastFPSTime = 0;  // <<< Thêm biến riêng cho FPS
     dispatch_async(dispatch_get_main_queue(), ^{
         UIAlertController *a = [UIAlertController alertControllerWithTitle:@"KENIOS HAX" message:msg preferredStyle:UIAlertControllerStyleAlert];
         [a addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-        // Lấy rootViewController an toàn hơn
-        UIViewController *rootVC = [UIApplication sharedApplication].windows.firstObject.rootViewController;
+        UIViewController *rootVC = KeniosTopViewController();
         if (rootVC) {
             [rootVC presentViewController:a animated:YES completion:nil];
         } else {
-            // Fallback: log lỗi
             KENIOS_LOG(@"ERROR: %@", msg);
         }
     });

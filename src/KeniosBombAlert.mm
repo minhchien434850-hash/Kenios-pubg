@@ -1,6 +1,7 @@
 #import "KeniosCommon.h"
 #import "KeniosOffsets.h"
 #import "KeniosConfig.h"
+#import "KeniosESP.h"
 
 @interface KeniosBombAlert ()
 @property (nonatomic, strong) KeniosBombAlertConfig *config;
@@ -19,9 +20,17 @@
     return self;
 }
 
+- (void)clearActiveBombs {
+    for (NSValue *v in self.activeBombs) {
+        KeniosBomb *bomb = (KeniosBomb *)[v pointerValue];
+        if (bomb) free(bomb);
+    }
+    [self.activeBombs removeAllObjects];
+}
+
 - (void)scanForBombs {
     if (!self.config.enabled || !g_GWorld) return;
-    [self.activeBombs removeAllObjects];
+    [self clearActiveBombs];
     KeniosOffsets *o = [KeniosOffsets sharedInstance];
     uint64_t persistentLevel = *(uint64_t *)(g_GWorld + o.PersistentLevel);
     if (!persistentLevel) return;
@@ -78,4 +87,6 @@
     if (rc) return *(KeniosVector3 *)(rc + o.ComponentToWorld + o.Translation);
     return (KeniosVector3){0,0,0};
 }
+
+- (void)dealloc { [self clearActiveBombs]; }
 @end

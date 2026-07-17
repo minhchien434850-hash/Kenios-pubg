@@ -1,12 +1,55 @@
 #import "KeniosCommon.h"
 #import "KeniosConfig.h"
 
+@implementation KeniosKeyData
+- (instancetype)initWithCoder:(NSCoder *)coder {
+    self = [super init];
+    if (self) {
+        self.key = [coder decodeObjectForKey:@"key"];
+        self.token = [coder decodeObjectForKey:@"token"];
+        self.type = [coder decodeIntForKey:@"type"];
+        self.maxDevices = [coder decodeIntForKey:@"maxDevices"];
+        self.expiryDate = [coder decodeObjectForKey:@"expiryDate"];
+        self.isValid = [coder decodeBoolForKey:@"isValid"];
+        self.features = [coder decodeObjectForKey:@"features"];
+    }
+    return self;
+}
+- (void)encodeWithCoder:(NSCoder *)coder {
+    [coder encodeObject:self.key forKey:@"key"];
+    [coder encodeObject:self.token forKey:@"token"];
+    [coder encodeInt:self.type forKey:@"type"];
+    [coder encodeInt:self.maxDevices forKey:@"maxDevices"];
+    [coder encodeObject:self.expiryDate forKey:@"expiryDate"];
+    [coder encodeBool:self.isValid forKey:@"isValid"];
+    [coder encodeObject:self.features forKey:@"features"];
+}
+@end
+
 @interface KeniosKeyAuth ()
 @property (nonatomic, strong) KeniosKeyData *currentKey;
 @property (nonatomic, strong) NSString *deviceID;
 @end
 
 @implementation KeniosKeyAuth
+
+static UIViewController *KeniosTopViewController(void) {
+    UIWindow *activeWindow = nil;
+    for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+        if (scene.activationState != UISceneActivationStateForegroundActive) continue;
+        if (![scene isKindOfClass:[UIWindowScene class]]) continue;
+        for (UIWindow *window in ((UIWindowScene *)scene).windows) {
+            if (window.isKeyWindow) { activeWindow = window; break; }
+        }
+        if (activeWindow) break;
+    }
+    if (!activeWindow) {
+        activeWindow = [UIApplication sharedApplication].windows.firstObject;
+    }
+    UIViewController *vc = activeWindow.rootViewController;
+    while (vc.presentedViewController) vc = vc.presentedViewController;
+    return vc;
+}
 
 + (instancetype)sharedInstance {
     static KeniosKeyAuth *i = nil; static dispatch_once_t t; dispatch_once(&t, ^{ i = [[KeniosKeyAuth alloc] init]; }); return i;
@@ -92,13 +135,24 @@
 
 - (BOOL)saveKeyData {
     if (!self.currentKey) return NO;
-    NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"KeniosHax/key.dat"];
-    return [NSKeyedArchiver archiveRootObject:self.currentKey toFile:path];
+    NSString *basePath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"KeniosHax"];
+    [[NSFileManager defaultManager] createDirectoryAtPath:basePath withIntermediateDirectories:YES attributes:nil error:nil];
+    NSString *path = [basePath stringByAppendingPathComponent:@"key.dat"];
+    NSError *error = nil;
+    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:self.currentKey requiringSecureCoding:NO error:&error];
+    return data && [data writeToFile:path options:NSDataWritingAtomic error:&error];
 }
 
 - (BOOL)loadKeyData {
     NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:@"KeniosHax/key.dat"];
-    self.currentKey = [NSKeyedUnarchiver unarchiveObjectWithFile:path];
+    NSData *data = [NSData dataWithContentsOfFile:path];
+    if (!data) return NO;
+    NSError *error = nil;
+    NSKeyedUnarchiver *unarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:data error:&error];
+    if (!unarchiver) return NO;
+    unarchiver.requiresSecureCoding = NO;
+    self.currentKey = [unarchiver decodeObjectForKey:NSKeyedArchiveRootObjectKey];
+    [unarchiver finishDecoding];
     [self checkKeyExpiry];
     return self.currentKey != nil;
 }
@@ -119,17 +173,20 @@
                     if (success) {
                         UIAlertController *ok = [UIAlertController alertControllerWithTitle:@"✅ Thành Công" message:@"Key đã được kích hoạt!" preferredStyle:UIAlertControllerStyleAlert];
                         [ok addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-                        [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:ok animated:YES completion:nil];
+                        UIViewController *vc = KeniosTopViewController();
+                        if (vc) [vc presentViewController:ok animated:YES completion:nil];
                     } else {
                         UIAlertController *err = [UIAlertController alertControllerWithTitle:@"❌ Lỗi" message:error ?: @"Key không hợp lệ" preferredStyle:UIAlertControllerStyleAlert];
                         [err addAction:[UIAlertAction actionWithTitle:@"Thử Lại" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) { [self showKeyInputDialog]; }]];
-                        [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:err animated:YES completion:nil];
+                        UIViewController *vc = KeniosTopViewController();
+                        if (vc) [vc presentViewController:err animated:YES completion:nil];
                     }
                 });
             }];
         }]];
         [alert addAction:[UIAlertAction actionWithTitle:@"Hủy" style:UIAlertActionStyleCancel handler:nil]];
-        [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alert animated:YES completion:nil];
+        UIViewController *vc = KeniosTopViewController();
+        if (vc) [vc presentViewController:alert animated:YES completion:nil];
     });
 }
 

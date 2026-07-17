@@ -7,10 +7,26 @@
 //
 
 #import "KeniosIPAValidator.h"
+#import "KeniosCommon.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonCrypto.h>
 
+@interface KeniosIPAValidator ()
+@property (nonatomic, assign) BOOL isIPAValid;
+@property (nonatomic, strong) KeniosIPAData *ipaData;
+@end
+
+@implementation KeniosIPAData
+@end
+
 @implementation KeniosIPAValidator
+
++ (instancetype)sharedInstance {
+    static KeniosIPAValidator *instance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{ instance = [[KeniosIPAValidator alloc] init]; });
+    return instance;
+}
 
 /**
  * Validate IPA file integrity and structure
@@ -120,6 +136,43 @@
     
     NSLog(@"[KENIOS] Invalid PUBG bundle: %@", bundleID);
     return NO;
+}
+
+- (BOOL)validateCurrentIPA {
+    NSString *bundleID = [[NSBundle mainBundle] bundleIdentifier];
+    if (![KeniosIPAValidator isValidPUBGBundle:bundleID]) {
+        self.isIPAValid = NO;
+        return NO;
+    }
+    self.ipaData = [KeniosIPAData new];
+    self.ipaData.bundleID = bundleID;
+    self.ipaData.version = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+    self.ipaData.isValid = YES;
+    self.isIPAValid = YES;
+    [[NSNotificationCenter defaultCenter] postNotificationName:KENIOS_NOTIF_IPA_VALIDATED object:nil];
+    return YES;
+}
+
+- (void)showIPAInvalidAlert {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"📱 IPA KHÔNG HỢP LỆ"
+                                                                       message:@"Vui lòng sử dụng IPA gốc từ App Store!"
+                                                                preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"Thoát" style:UIAlertActionStyleDestructive handler:^(UIAlertAction *a) { exit(0); }]];
+        UIWindow *activeWindow = nil;
+        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+            if (scene.activationState != UISceneActivationStateForegroundActive) continue;
+            if (![scene isKindOfClass:[UIWindowScene class]]) continue;
+            for (UIWindow *window in ((UIWindowScene *)scene).windows) {
+                if (window.isKeyWindow) { activeWindow = window; break; }
+            }
+            if (activeWindow) break;
+        }
+        if (!activeWindow) activeWindow = [UIApplication sharedApplication].windows.firstObject;
+        UIViewController *vc = activeWindow.rootViewController;
+        while (vc.presentedViewController) vc = vc.presentedViewController;
+        if (vc) [vc presentViewController:alert animated:YES completion:nil];
+    });
 }
 
 @end

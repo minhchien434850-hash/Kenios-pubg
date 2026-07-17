@@ -1,6 +1,9 @@
 #import "KeniosCommon.h"
 #import "KeniosConfig.h"
 
+static int hooked_sysctl(int *name, u_int namelen, void *oldp, size_t *oldlenp, void *newp, size_t newlen);
+static int hooked_sysctlbyname(const char *name, void *oldp, size_t *oldlenp, void *newp, size_t newlen);
+
 @interface KeniosAntiBanPro ()
 @property (nonatomic, assign) KeniosAntiBanMode currentMode;
 @property (nonatomic, assign) int banWarningCount;

@@ -13,6 +13,17 @@
 
 @implementation KeniosUtils
 
++ (UIWindow *)activeWindow {
+    for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+        if (scene.activationState != UISceneActivationStateForegroundActive) continue;
+        if (![scene isKindOfClass:[UIWindowScene class]]) continue;
+        for (UIWindow *window in ((UIWindowScene *)scene).windows) {
+            if (window.isKeyWindow) return window;
+        }
+    }
+    return [UIApplication sharedApplication].windows.firstObject;
+}
+
 #pragma mark - Device Info
 
 + (NSString *)getDeviceModel {
@@ -195,13 +206,16 @@
                                                                        message:message
                                                                 preferredStyle:UIAlertControllerStyleAlert];
         [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-        [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alert animated:YES completion:nil];
+        UIWindow *window = [self activeWindow];
+        UIViewController *vc = window.rootViewController;
+        while (vc.presentedViewController) vc = vc.presentedViewController;
+        if (vc) [vc presentViewController:alert animated:YES completion:nil];
     });
 }
 
 + (void)showToast:(NSString *)message duration:(NSTimeInterval)duration {
     dispatch_async(dispatch_get_main_queue(), ^{
-        UIWindow *window = [UIApplication sharedApplication].keyWindow;
+        UIWindow *window = [self activeWindow];
         if (!window) return;
         
         UILabel *toast = [[UILabel alloc] init];
