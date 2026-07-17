@@ -1,0 +1,160 @@
+{
+  "version": "3.0.0",
+  "last_updated": "2026-07-17T12:00:00Z",
+  "game_version": "4.5.0",
+  "ios_support": "16.0-26.5",
+  "detection_modules": {
+    "ACE": {
+      "name": "Anti-Cheat Expert",
+      "vendor": "Tencent",
+      "bypass_method": "hook_redirect",
+      "hooked": true
+    },
+    "TPProtect": {
+      "name": "Tencent Protect",
+      "vendor": "Tencent",
+      "bypass_method": "return_zero",
+      "hooked": true
+    },
+    "MTP": {
+      "name": "Mobile Tencent Protect",
+      "vendor": "Tencent",
+      "bypass_method": "module_hide",
+      "hooked": true
+    },
+    "tersafe": {
+      "name": "TerSafe",
+      "vendor": "Tencent",
+      "bypass_method": "function_hook",
+      "hooked": true
+    },
+    "GCloud": {
+      "name": "GCloud SDK",
+      "vendor": "Tencent",
+      "bypass_method": "network_block",
+      "hooked": true
+    },
+    "bugly": {
+      "name": "Bugly Crash Report",
+      "vendor": "Tencent",
+      "bypass_method": "disable_init",
+      "hooked": true
+    },
+    "tdm": {
+      "name": "TDM Analytics",
+      "vendor": "Tencent",
+      "bypass_method": "data_block",
+      "hooked": true
+    },
+    "MSDK": {
+      "name": "MSDK Platform",
+      "vendor": "Tencent",
+      "bypass_method": "hook_init",
+      "hooked": true
+    }
+  },
+  "anti_ban_settings": {
+    "safe_mode": {
+      "enabled": true,
+      "aimbot": {
+        "fov_limit": 30,
+        "smooth_min": 5,
+        "max_distance": 150,
+        "headshot_ratio_max": 45,
+        "accuracy_max": 60,
+        "kill_limit_per_match": 15,
+        "random_miss_chance": 15,
+        "humanize_aim": true,
+        "humanize_strength": 0.8,
+        "reaction_delay_min_ms": 150,
+        "reaction_delay_max_ms": 350
+      },
+      "esp": {
+        "distance_limit": 150,
+        "show_through_walls": false
+      },
+      "magic_bullet": {
+        "enabled": false
+      },
+      "auto_actions": {
+        "disable_on_report": true,
+        "disable_on_high_kd": true,
+        "disable_on_spectate": true,
+        "switch_to_safe_on_ban_warning": true
+      }
+    },
+    "aggressive_mode": {
+      "enabled": false,
+      "aimbot": {
+        "fov_limit": 360,
+        "smooth_min": 1,
+        "max_distance": 500,
+        "headshot_ratio_max": 100,
+        "accuracy_max": 100,
+        "kill_limit_per_match": 999,
+        "random_miss_chance": 0,
+        "humanize_aim": false
+      },
+      "esp": {
+        "distance_limit": 500,
+        "show_through_walls": true
+      },
+      "magic_bullet": {
+        "enabled": true
+      },
+      "auto_actions": {
+        "disable_on_report": false,
+        "disable_on_high_kd": false,
+        "disable_on_spectate": false,
+        "switch_to_safe_on_ban_warning": true
+      }
+    }
+  },
+  "ban_detection_triggers": {
+    "ban_keywords": ["banned", "suspended", "violation", "restricted", "account suspended", "temporary ban", "permanent ban", "fair play", "third party", "unauthorized", "game data abnormal"],
+    "warning_threshold": 2,
+    "auto_switch_mode": true,
+    "monitor_interval_seconds": 30
+  },
+  "network_blocking": {
+    "enabled": true,
+    "blocked_domains": ["*.intlgame.com", "*.tencent.com", "*.pubgmobile.com", "*.tencent-cloud.com", "*.bugly.qq.com", "*.tdm.qq.com", "*.gcloud.com", "*.tss.qq.com", "*.ace.tencent.com"],
+    "block_crash_reports": true,
+    "block_analytics": true,
+    "block_telemetry": true,
+    "block_screenshot_detection": true
+  },
+  "ios_specific_bypass": {
+    "ios16": {
+      "jailbreak_detection_bypass": true,
+      "debugger_detection_bypass": true,
+      "integrity_check_bypass": true,
+      "hook_detection_bypass": true,
+      "dyld_injection_hide": true
+    },
+    "ios17": {
+      "jailbreak_detection_bypass": true,
+      "debugger_detection_bypass": true,
+      "integrity_check_bypass": true,
+      "hook_detection_bypass": true,
+      "dyld_injection_hide": true,
+      "signed_volume_bypass": true
+    },
+    "ios18_plus": {
+      "jailbreak_detection_bypass": true,
+      "debugger_detection_bypass": true,
+      "integrity_check_bypass": true,
+      "hook_detection_bypass": true,
+      "dyld_injection_hide": true,
+      "signed_volume_bypass": true,
+      "extended_security_bypass": true,
+      "memory_attribution_bypass": true
+    }
+  },
+  "integrity_bypass": {
+    "hook_functions": ["mach_vm_region", "vm_region_recurse_64", "mach_vm_read_overwrite", "task_for_pid", "ptrace", "sysctl", "sysctlbyname", "csops", "proc_pidinfo", "proc_pidpath", "sandbox_check", "file_check", "csops_audittoken", "mach_vm_protect", "vm_map_protect", "task_set_exception_ports"],
+    "hide_files": ["/Applications/Cydia.app", "/Library/MobileSubstrate", "/usr/sbin/sshd", "/etc/apt", "/var/lib/cydia", "/bin/bash", "/usr/bin/ssh", "/private/preboot/", "/var/jb/", "/usr/lib/libsubstrate.dylib", "/usr/lib/libellekit.dylib"],
+    "spoof_device_info": true,
+    "randomize_device_id": false
+  }
+}
