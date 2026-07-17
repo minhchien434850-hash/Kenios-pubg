@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KENIOS HAX - Admin Login</title>
+    <link rel="stylesheet" href="css/admin.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; }
+        .login-container { background: #12121a; padding: 40px; border-radius: 20px; border: 1px solid #00ffff44; box-shadow: 0 0 30px #00ffff22; width: 400px; text-align: center; }
+        .login-container h1 { color: #00ffff; margin-bottom: 30px; font-size: 28px; }
+        .login-container h1 span { color: #ff00ff; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 8px; color: #aaa; font-size: 14px; }
+        .form-group input { width: 100%; padding: 12px 15px; background: #1a1a25; border: 1px solid #333; border-radius: 10px; color: #fff; font-size: 16px; outline: none; transition: border 0.3s; }
+        .form-group input:focus { border-color: #00ffff; }
+        .btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #00ffff, #0088ff); border: none; border-radius: 10px; color: #000; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn:hover { transform: scale(1.02); box-shadow: 0 0 20px #00ffff44; }
+        .error { color: #ff4444; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>🔥 KENIOS <span>HAX</span></h1>
+        <p style="color:#aaa;margin-bottom:30px;">Admin Panel - iOS 16.0-26.5</p>
+        <div class="form-group"><label>Username</label><input type="text" id="username" placeholder="admin"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="password" placeholder="••••••••"></div>
+        <button class="btn" onclick="login()">Đăng Nhập</button>
+        <p class="error" id="error">Sai thông tin đăng nhập!</p>
+    </div>
+    <script>
+        async function login() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            try {
+                const res = await fetch('/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) });
+                const data = await res.json();
+                if (res.ok) { localStorage.setItem('kenios_token', data.token); window.location.href = '/admin/dashboard'; }
+                else { document.getElementById('error').style.display = 'block'; }
+            } catch(e) { document.getElementById('error').style.display = 'block'; }
+        }
+    </script>
+</body>
+</html>
