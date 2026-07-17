@@ -1,0 +1,150 @@
+{
+  "version": "4.5.0",
+  "game_version": "4.5.0.20715",
+  "last_updated": "2026-07-17T12:00:00Z",
+  "ios_support": {
+    "min": "16.0",
+    "max": "26.5",
+    "architectures": ["arm64", "arm64e"],
+    "jailbreaks": ["Dopamine", "XinaA15", "Palera1n", "Xinam1ne", "rootless", "rootful"],
+    "devices": ["iPhone XS", "iPhone XR", "iPhone 11", "iPhone 12", "iPhone 13", "iPhone 14", "iPhone 15", "iPhone 16", "iPhone 17", "iPhone 18", "iPhone 19", "iPhone 20", "iPad Pro 2018+", "iPad Air 2019+", "iPad mini 2019+"]
+  },
+  "base_addresses": {
+    "libUE4": 4294967296,
+    "libUE4_size": 536870912,
+    "libUE4_text_start": 4295000064,
+    "libUE4_data_start": 4831838208
+  },
+  "offsets": {
+    "GWorld": 237497144,
+    "GNames": 236721696,
+    "UWorld": {
+      "PersistentLevel": 48,
+      "GameState": 344,
+      "OwningGameInstance": 472,
+      "Levels": 368
+    },
+    "ULevel": {
+      "Actors": 152,
+      "Actors_Count": 160
+    },
+    "AActor": {
+      "RootComponent": 408,
+      "PlayerController": 712,
+      "Mesh": 800,
+      "PlayerState": 704
+    },
+    "USceneComponent": {
+      "ComponentToWorld": 456,
+      "RelativeLocation": 292
+    },
+    "USkeletalMeshComponent": {
+      "ComponentSpaceTransformsArray": 1936,
+      "BoneSpaceTransforms": 1944,
+      "CachedBoneSpaceTransforms": 1952,
+      "BoneCount": 2192
+    },
+    "APlayerController": {
+      "PlayerCameraManager": 848,
+      "ControlRotation": 768,
+      "Pawn": 784,
+      "AcknowledgedPawn": 792
+    },
+    "APlayerCameraManager": {
+      "CameraCache": 11280,
+      "ViewMatrix": 11344,
+      "CameraCachePrivate": 11280
+    },
+    "FTransform": {
+      "Translation": 32,
+      "Rotation": 0,
+      "Scale3D": 16
+    },
+    "APlayerState": {
+      "TeamID": 1096,
+      "PlayerName": 992,
+      "Health": 1104,
+      "Armor": 1112,
+      "Kills": 1120,
+      "bIsABot": 1136
+    },
+    "AWeapon": {
+      "CurrentAmmo": 824,
+      "MaxAmmo": 828,
+      "RecoilPattern": 832,
+      "Spread": 840,
+      "FireRate": 848,
+      "BulletSpeed": 856,
+      "Damage": 864,
+      "WeaponType": 872,
+      "WeaponID": 876
+    },
+    "AShotgun": {
+      "PelletCount": 880,
+      "PelletSpread": 884,
+      "PelletRange": 888
+    },
+    "AVehicle": {
+      "VehicleType": 1024,
+      "MaxSpeed": 1032,
+      "CurrentFuel": 1040,
+      "MaxFuel": 1044
+    },
+    "ABomb": {
+      "BombType": 900,
+      "ExplosionRadius": 904,
+      "ExplosionTime": 908,
+      "BombLocation": 912
+    }
+  },
+  "bones": {
+    "ROOT": 0,
+    "PELVIS": 0,
+    "SPINE_01": 2,
+    "SPINE_02": 3,
+    "SPINE_03": 4,
+    "NECK": 5,
+    "HEAD": 6,
+    "LEFT_CLAVICLE": 11,
+    "LEFT_UPPER_ARM": 12,
+    "LEFT_ELBOW": 13,
+    "LEFT_FOREARM": 14,
+    "LEFT_WRIST": 15,
+    "LEFT_HAND": 16,
+    "RIGHT_CLAVICLE": 31,
+    "RIGHT_UPPER_ARM": 32,
+    "RIGHT_ELBOW": 33,
+    "RIGHT_FOREARM": 34,
+    "RIGHT_WRIST": 35,
+    "RIGHT_HAND": 36,
+    "LEFT_THIGH": 55,
+    "LEFT_KNEE": 56,
+    "LEFT_CALF": 57,
+    "LEFT_FOOT": 58,
+    "RIGHT_THIGH": 63,
+    "RIGHT_KNEE": 64,
+    "RIGHT_CALF": 65,
+    "RIGHT_FOOT": 66
+  },
+  "ios_specific": {
+    "ios16": {
+      "dyld_shared_cache_offset": 0,
+      "kernel_base_offset": 0,
+      "PAC_bypass": true,
+      "page_protection_bypass": true
+    },
+    "ios17": {
+      "dyld_shared_cache_offset": 4096,
+      "kernel_base_offset": 8192,
+      "PAC_bypass": true,
+      "page_protection_bypass": true
+    },
+    "ios18_plus": {
+      "dyld_shared_cache_offset": 8192,
+      "kernel_base_offset": 16384,
+      "PAC_bypass": true,
+      "page_protection_bypass": true,
+      "signed_pointer_auth": true
+    }
+  }
+}
