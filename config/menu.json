@@ -1,0 +1,215 @@
+{
+  "version": "2.0.0",
+  "ios_support": "16.0-26.5",
+  "theme": {
+    "name": "Cyber Neon Dark",
+    "background_color": "#0A0A0F",
+    "background_alpha": 0.97,
+    "accent_color": "#00FFFF",
+    "secondary_color": "#FF00FF",
+    "text_color": "#FFFFFF",
+    "danger_color": "#FF4444",
+    "success_color": "#44FF44",
+    "warning_color": "#FFAA00"
+  },
+  "sections": [
+    {
+      "id": "header",
+      "title": "🔥 KENIOS HAX v4.5.0",
+      "type": "header",
+      "items": [
+        {"type": "label", "text": "👤 Welcome", "key": "welcome"},
+        {"type": "label", "text": "🛡 Anti-Ban: ACTIVE", "key": "antiband", "color": "#44FF44"},
+        {"type": "label", "text": "📊 FPS: --", "key": "fps", "color": "#00FFFF"},
+        {"type": "label", "text": "📡 Ping: --ms", "key": "ping", "color": "#FFAA00"},
+        {"type": "label", "text": "📱 iOS: --", "key": "ios_version", "color": "#AAAAAA"},
+        {"type": "button", "text": "⭐ GitHub", "action": "open_github"},
+        {"type": "button", "text": "👁 Hide Menu", "action": "hide_menu", "color": "#FF4444"}
+      ]
+    },
+    {
+      "id": "aimbot",
+      "title": "🎯 AIMBOT",
+      "collapsed": false,
+      "items": [
+        {"type": "switch", "label": "Enable", "key": "aimbot_enabled", "default": true},
+        {"type": "segment", "label": "Target", "key": "aim_target", "segments": ["Head", "Neck", "Chest", "Body"], "default": 0},
+        {"type": "slider", "label": "FOV", "key": "aim_fov", "min": 1, "max": 360, "default": 180, "unit": "°"},
+        {"type": "slider", "label": "FOV Circle Size", "key": "fov_circle", "min": 10, "max": 500, "default": 180, "unit": "px"},
+        {"type": "color", "label": "FOV Color", "key": "fov_color", "default": "#00FFFF"},
+        {"type": "slider", "label": "Smooth", "key": "aim_smooth", "min": 1, "max": 20, "default": 2},
+        {"type": "slider", "label": "Max Distance", "key": "aim_distance", "min": 0, "max": 500, "default": 500, "unit": "m"},
+        {"type": "switch", "label": "Visibility Check", "key": "aim_visibility", "default": false},
+        {"type": "switch", "label": "Behind Wall", "key": "aim_wall", "default": true},
+        {"type": "switch", "label": "Prediction", "key": "aim_prediction", "default": true},
+        {"type": "switch", "label": "Aim Bots", "key": "aim_bots", "default": true},
+        {"type": "switch", "label": "Aim Players", "key": "aim_players", "default": true},
+        {"type": "switch", "label": "Aim Team", "key": "aim_team", "default": false}
+      ]
+    },
+    {
+      "id": "shotgun",
+      "title": "🔫 SHOTGUN",
+      "items": [
+        {"type": "switch", "label": "Shotgun Mode", "key": "shotgun_enabled", "default": true},
+        {"type": "segment", "label": "Aim Mode", "key": "shotgun_mode", "segments": ["Center", "Head", "Spread"], "default": 0},
+        {"type": "slider", "label": "Pellet Count", "key": "shotgun_pellet", "min": 1, "max": 12, "default": 8},
+        {"type": "slider", "label": "Spread Reduction", "key": "shotgun_spread", "min": 0, "max": 100, "default": 75, "unit": "%"}
+      ]
+    },
+    {
+      "id": "esp",
+      "title": "👁 ESP",
+      "items": [
+        {"type": "switch", "label": "Enable", "key": "esp_enabled", "default": true},
+        {"type": "switch", "label": "Box", "key": "esp_box", "default": true},
+        {"type": "color", "label": "Box Color (Visible)", "key": "esp_box_visible", "default": "#FF0000"},
+        {"type": "color", "label": "Box Color (Hidden)", "key": "esp_box_hidden", "default": "#FFAA00"},
+        {"type": "color", "label": "Box Color (Team)", "key": "esp_box_team", "default": "#00FF00"},
+        {"type": "color", "label": "Box Color (Bot)", "key": "esp_box_bot", "default": "#FF8800"},
+        {"type": "switch", "label": "Skeleton", "key": "esp_skeleton", "default": true},
+        {"type": "color", "label": "Skeleton Color", "key": "esp_sk_color", "default": "#FFFFFF"},
+        {"type": "switch", "label": "Health Bar", "key": "esp_healthbar", "default": true},
+        {"type": "switch", "label": "Name", "key": "esp_name", "default": true},
+        {"type": "switch", "label": "Distance", "key": "esp_distance", "default": true},
+        {"type": "switch", "label": "Line", "key": "esp_line", "default": true},
+        {"type": "switch", "label": "Loot", "key": "esp_loot", "default": false},
+        {"type": "switch", "label": "Vehicle", "key": "esp_vehicle", "default": false},
+        {"type": "switch", "label": "Crosshair", "key": "esp_crosshair", "default": true}
+      ]
+    },
+    {
+      "id": "bomb",
+      "title": "💣 BOMB ALERT",
+      "items": [
+        {"type": "switch", "label": "Enable", "key": "bomb_enabled", "default": true},
+        {"type": "slider", "label": "Range", "key": "bomb_range", "min": 10, "max": 200, "default": 50, "unit": "m"},
+        {"type": "switch", "label": "Grenade", "key": "bomb_grenade", "default": true},
+        {"type": "switch", "label": "Molotov", "key": "bomb_molotov", "default": true},
+        {"type": "switch", "label": "C4", "key": "bomb_c4", "default": true},
+        {"type": "switch", "label": "Sound Alert", "key": "bomb_sound", "default": true},
+        {"type": "switch", "label": "Vibrate", "key": "bomb_vibrate", "default": true}
+      ]
+    },
+    {
+      "id": "magic_bullet",
+      "title": "💫 MAGIC BULLET",
+      "items": [
+        {"type": "switch", "label": "Enable", "key": "magic_enabled", "default": true},
+        {"type": "slider", "label": "Radius", "key": "magic_radius", "min": 10, "max": 500, "default": 100, "unit": "m"},
+        {"type": "switch", "label": "All Guns", "key": "magic_all", "default": true}
+      ]
+    },
+    {
+      "id": "weapons",
+      "title": "⚔ WEAPONS",
+      "items": [
+        {"type": "switch", "label": "No Recoil", "key": "no_recoil", "default": true},
+        {"type": "switch", "label": "Instant Hit", "key": "instant_hit", "default": true},
+        {"type": "switch", "label": "No Spread", "key": "no_spread", "default": true},
+        {"type": "switch", "label": "Rapid Fire", "key": "rapid_fire", "default": false},
+        {"type": "switch", "label": "Auto Reload", "key": "auto_reload", "default": true}
+      ]
+    },
+    {
+      "id": "movement",
+      "title": "🏃 MOVEMENT",
+      "items": [
+        {"type": "switch", "label": "Speed Hack", "key": "speed_hack", "default": false},
+        {"type": "slider", "label": "Speed x", "key": "speed_multi", "min": 1.0, "max": 3.0, "default": 1.5},
+        {"type": "switch", "label": "No Fall Damage", "key": "no_fall", "default": true}
+      ]
+    },
+    {
+      "id": "skins",
+      "title": "👗 SKINS",
+      "items": [
+        {"type": "slider", "label": "Weapon Skin ID", "key": "skin_weapon_id", "min": 1, "max": 76, "default": 1},
+        {"type": "slider", "label": "Character Skin ID", "key": "skin_char_id", "min": 100, "max": 154, "default": 100},
+        {"type": "slider", "label": "Vehicle Skin ID", "key": "skin_vehicle_id", "min": 200, "max": 293, "default": 200},
+        {"type": "slider", "label": "Vehicle Effect ID", "key": "skin_effect_id", "min": 1, "max": 10, "default": 1},
+        {"type": "slider", "label": "Parachute Skin ID", "key": "skin_chute_id", "min": 300, "max": 310, "default": 300},
+        {"type": "slider", "label": "Backpack Skin ID", "key": "skin_bag_id", "min": 320, "max": 335, "default": 320},
+        {"type": "slider", "label": "Helmet Skin ID", "key": "skin_helm_id", "min": 340, "max": 355, "default": 340},
+        {"type": "button", "label": "Apply All Best", "action": "apply_best"},
+        {"type": "button", "label": "Randomize", "action": "randomize"}
+      ]
+    },
+    {
+      "id": "vehicle_master",
+      "title": "🚗 VEHICLE MASTER",
+      "items": [
+        {"type": "switch", "label": "Enable", "key": "vehicle_master", "default": false},
+        {"type": "slider", "label": "Speed Boost", "key": "vehicle_speed", "min": 1.0, "max": 5.0, "default": 2.0, "unit": "x"},
+        {"type": "switch", "label": "Unlock All", "key": "vehicle_unlock", "default": false},
+        {"type": "switch", "label": "God Mode", "key": "vehicle_god", "default": false}
+      ]
+    },
+    {
+      "id": "event_shop",
+      "title": "🎪 EVENT SHOP",
+      "items": [
+        {"type": "switch", "label": "Enable", "key": "shop_enabled", "default": false},
+        {"type": "button", "label": "Summer Festival", "action": "event_summer"},
+        {"type": "button", "label": "Dragon Festival", "action": "event_dragon"},
+        {"type": "button", "label": "Cyberpunk 2077", "action": "event_cyber"}
+      ]
+    },
+    {
+      "id": "anti_ban",
+      "title": "🛡 ANTI-BAN PRO",
+      "items": [
+        {"type": "switch", "label": "Enable", "key": "antiband_enabled", "default": true},
+        {"type": "segment", "label": "Mode", "key": "antiband_mode", "segments": ["Safe", "Aggressive", "Auto"], "default": 2},
+        {"type": "switch", "label": "Humanize", "key": "antiband_humanize", "default": true},
+        {"type": "slider", "label": "Miss %", "key": "antiband_miss", "min": 0, "max": 30, "default": 5, "unit": "%"},
+        {"type": "slider", "label": "Kill Limit", "key": "antiband_kill", "min": 5, "max": 50, "default": 20},
+        {"type": "slider", "label": "Headshot Limit", "key": "antiband_hs", "min": 10, "max": 100, "default": 45, "unit": "%"}
+      ]
+    },
+    {
+      "id": "performance",
+      "title": "📊 PERFORMANCE",
+      "items": [
+        {"type": "switch", "label": "FPS Display", "key": "fps_display", "default": true},
+        {"type": "segment", "label": "FPS Limit", "key": "fps_limit", "segments": ["30", "60", "90", "120"], "default": 1},
+        {"type": "switch", "label": "FPS Boost", "key": "fps_boost", "default": true},
+        {"type": "switch", "label": "Ping Display", "key": "ping_display", "default": true}
+      ]
+    },
+    {
+      "id": "key",
+      "title": "🔑 KEY",
+      "items": [
+        {"type": "label", "text": "Status: --", "key": "key_status"},
+        {"type": "textfield", "label": "Enter Key", "key": "key_input", "placeholder": "XXXX-XXXX-XXXX-XXXX"},
+        {"type": "button", "label": "Activate", "action": "activate_key"}
+      ]
+    },
+    {
+      "id": "ipa",
+      "title": "📱 IPA VALIDATOR",
+      "items": [
+        {"type": "label", "text": "Status: --", "key": "ipa_status"},
+        {"type": "button", "label": "Select IPA", "action": "select_ipa"}
+      ]
+    },
+    {
+      "id": "language",
+      "title": "🌍 LANGUAGE",
+      "items": [
+        {"type": "segment", "label": "Language", "key": "language", "segments": ["🇻🇳 VI", "🇺🇸 EN", "🇨🇳 ZH", "🇷🇺 RU", "🇸🇦 AR", "🇪🇸 ES", "🇧🇷 PT", "🇯🇵 JA", "🇰🇷 KO", "🇹🇭 TH", "🇮🇩 ID"], "default": 0}
+      ]
+    },
+    {
+      "id": "settings",
+      "title": "⚙ SETTINGS",
+      "items": [
+        {"type": "switch", "label": "Auto Update", "key": "auto_update", "default": true},
+        {"type": "button", "label": "Export Config", "action": "export"},
+        {"type": "button", "label": "Import Config", "action": "import"},
+        {"type": "button", "label": "Reset", "action": "reset", "color": "#FF4444"}
+      ]
+    }
+  ]
+}
