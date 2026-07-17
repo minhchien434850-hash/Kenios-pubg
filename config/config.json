@@ -1,0 +1,47 @@
+{
+  "kenios_version": "4.5.0",
+  "kenios_build": 20260717,
+  "ios_min": "16.0",
+  "ios_max": "26.5",
+  "server_url": "https://api.kenios-hax.dev",
+  "github_repo": "https://github.com/kenios-hax/kenios-ipa",
+  "encryption": {
+    "enabled": true,
+    "algorithm": "AES-256-CBC",
+    "key_derivation": "PBKDF2-SHA256",
+    "iterations": 100000
+  },
+  "features": {
+    "aimbot": true,
+    "shotgun_aim": true,
+    "esp": true,
+    "bomb_alert": true,
+    "magic_bullet": true,
+    "skin_changer": true,
+    "vehicle_master": true,
+    "event_shop": true,
+    "anti_ban": true,
+    "key_system": true,
+    "ipa_validator": true,
+    "fps_display": true,
+    "multi_language": true,
+    "network_monitor": true
+  },
+  "security": {
+    "check_ipa_checksum": true,
+    "require_key": true,
+    "heartbeat_interval": 60,
+    "max_offline_time": 3600,
+    "encrypt_config": true,
+    "anti_tamper": true,
+    "debug_detection": true,
+    "ios_version_check": true
+  },
+  "network": {
+    "api_timeout": 15,
+    "retry_count": 3,
+    "retry_delay": 2,
+    "use_ssl": true,
+    "certificate_pinning": true
+  }
+}
