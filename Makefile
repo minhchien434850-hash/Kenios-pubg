@@ -25,7 +25,8 @@ KeniosHax_FILES = \
 	src/KeniosIPAValidator.mm \
 	src/KeniosBombAlert.mm \
 	src/KeniosVehicleMaster.mm \
-	src/KeniosEventShop.mm
+	src/KeniosEventShop.mm \
+	src/KeniosUtils.mm
 
 KeniosHax_CFLAGS = \
 	-I./headers \
@@ -75,20 +76,73 @@ after-install::
 
 clean::
 	rm -rf .theos packages obj
-	rm -f *.deb
+	rm -f *.deb *.ipa
 	find . -name "*.dylib" -delete
 
-# Build IPA - Cách đơn giản
-ipa: all
+# Compile the tweak
+compile: package
+	@echo "✅ Compilation successful!"
+
+# Create IPA from compiled tweak
+ipa: package
 	@echo "[*] Building IPA package..."
 	@mkdir -p packages/Payload/PUBGM.app
-	@cp -r .theos/obj/debug/arm64/KeniosHax.dylib packages/Payload/PUBGM.app/ 2>/dev/null || true
-	@cd packages && zip -qr KeniosHax_iOS16_26.ipa Payload/ 2>/dev/null || true
-	@if [ -f packages/KeniosHax_iOS16_26.ipa ]; then \
-		echo "[+] IPA created: packages/KeniosHax_iOS16_26.ipa"; \
-		ls -lh packages/KeniosHax_iOS16_26.ipa; \
+	@if [ -f ".theos/obj/debug/arm64/KeniosHax.dylib" ]; then \
+		echo "[+] Found arm64 dylib"; \
+		cp .theos/obj/debug/arm64/KeniosHax.dylib packages/Payload/PUBGM.app/; \
+	elif [ -f ".theos/obj/debug/arm64e/KeniosHax.dylib" ]; then \
+		echo "[+] Found arm64e dylib"; \
+		cp .theos/obj/debug/arm64e/KeniosHax.dylib packages/Payload/PUBGM.app/; \
 	else \
-		echo "[-] IPA build failed"; \
+		echo "[-] Error: dylib not found!"; \
+		exit 1; \
+	fi
+	@echo "[*] Creating IPA package..."
+	@cd packages && zip -qr KeniosHax_iOS16_26.ipa Payload/ 2>/dev/null || true
+	@if [ -f "packages/KeniosHax_iOS16_26.ipa" ]; then \
+		echo ""; \
+		echo "✅ ========================================="; \
+		echo "✅ IPA BUILD SUCCESS!"; \
+		echo "✅ ========================================="; \
+		echo ""; \
+		echo "📦 IPA File: packages/KeniosHax_iOS16_26.ipa"; \
+		ls -lh packages/KeniosHax_iOS16_26.ipa; \
+		echo ""; \
+	else \
+		echo "❌ Error: Failed to create IPA"; \
+		exit 1; \
 	fi
 
-.PHONY: clean ipa
+# Create DEB package for Cydia/Sileo
+deb: package
+	@echo "📦 Building DEB package..."
+	@if [ -f "packages/com.kenios.hax_$(KeniosHax_PACKAGE_VERSION)_iphoneos-arm.deb" ]; then \
+		echo "✅ DEB created successfully"; \
+		ls -lh packages/com.kenios.hax_$(KeniosHax_PACKAGE_VERSION)_iphoneos-arm.deb; \
+	else \
+		echo "❌ Error: DEB not found"; \
+		exit 1; \
+	fi
+
+# Install to device
+install-device: package
+	@echo "📱 Installing to device..."
+	install.exec "killall -9 PUBGM || true"
+	@sleep 1
+	install.exec "uicache -p /Library/MobileSubstrate/DynamicLibraries/KeniosHax.plist"
+	@sleep 1
+	@echo "✅ Installation complete! Respringing..."
+	install.exec "killall -9 SpringBoard || ldrestart"
+
+# Help command
+help:
+	@echo "KENIOS HAX - Build Commands"
+	@echo "============================="
+	@echo "make package      - Compile tweak into DEB"
+	@echo "make ipa          - Build IPA file"
+	@echo "make deb          - Build DEB package"
+	@echo "make install      - Install to connected device"
+	@echo "make clean        - Clean build files"
+	@echo "make help         - Show this help message"
+
+.PHONY: clean ipa deb compile install-device help
