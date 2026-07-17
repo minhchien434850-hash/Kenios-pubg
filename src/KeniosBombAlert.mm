@@ -1,6 +1,7 @@
 #import "KeniosCommon.h"
 #import "KeniosOffsets.h"
 #import "KeniosConfig.h"
+#import "KeniosESP.h"
 
 @interface KeniosBombAlert ()
 @property (nonatomic, strong) KeniosBombAlertConfig *config;
@@ -19,9 +20,15 @@
     return self;
 }
 
+- (void)clearActiveBombs {
+    @synchronized (self.activeBombs) {
+        [self.activeBombs removeAllObjects];
+    }
+}
+
 - (void)scanForBombs {
     if (!self.config.enabled || !g_GWorld) return;
-    [self.activeBombs removeAllObjects];
+    [self clearActiveBombs];
     KeniosOffsets *o = [KeniosOffsets sharedInstance];
     uint64_t persistentLevel = *(uint64_t *)(g_GWorld + o.PersistentLevel);
     if (!persistentLevel) return;
@@ -51,12 +58,15 @@
         float dist = sqrt(dx*dx + dy*dy + dz*dz) / 100.0f;
         if (dist > self.config.range) continue;
         
-        KeniosBomb *bomb = (KeniosBomb *)malloc(sizeof(KeniosBomb));
-        bomb->position = bombPos; bomb->type = bombType;
-        bomb->radius = *(float *)(actor + o.ExplosionRadius);
-        bomb->timeToExplode = *(float *)(actor + o.ExplosionTime);
-        bomb->isActive = YES;
-        [self.activeBombs addObject:[NSValue valueWithPointer:bomb]];
+        KeniosBomb bomb;
+        bomb.position = bombPos; bomb.type = bombType;
+        bomb.radius = *(float *)(actor + o.ExplosionRadius);
+        bomb.timeToExplode = *(float *)(actor + o.ExplosionTime);
+        bomb.isActive = YES;
+        NSData *bombData = [NSData dataWithBytes:&bomb length:sizeof(KeniosBomb)];
+        @synchronized (self.activeBombs) {
+            [self.activeBombs addObject:bombData];
+        }
         
         if (self.config.vibrateAlert) AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
         [[NSNotificationCenter defaultCenter] postNotificationName:KENIOS_NOTIF_BOMB_DETECTED object:nil];
@@ -78,4 +88,6 @@
     if (rc) return *(KeniosVector3 *)(rc + o.ComponentToWorld + o.Translation);
     return (KeniosVector3){0,0,0};
 }
+
+- (void)dealloc { [self clearActiveBombs]; }
 @end

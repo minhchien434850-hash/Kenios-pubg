@@ -7,6 +7,18 @@
 #import "KeniosKeyAuth.h"
 #import "KeniosSkinChanger.h"
 #import "KeniosAntiBanPro.h"
+#import "KeniosGiftChecker.h"
+
+static UIWindow *KeniosActiveWindow(void) {
+    for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+        if (scene.activationState != UISceneActivationStateForegroundActive) continue;
+        if (![scene isKindOfClass:[UIWindowScene class]]) continue;
+        for (UIWindow *window in ((UIWindowScene *)scene).windows) {
+            if (window.isKeyWindow) return window;
+        }
+    }
+    return [UIApplication sharedApplication].windows.firstObject;
+}
 
 @interface KeniosMenuView : UIView <UITableViewDelegate, UITableViewDataSource>
 @property (nonatomic, strong) UITableView *tableView;
@@ -135,6 +147,19 @@
     }];
     
     [self.sections addObject:@{
+        @"title": self.lang[@"gift_checker"] ?: @"🎁 KIỂM TRA QUÀ TẶNG",
+        @"items": @[
+            @{@"type":@"label",@"label":@"Quà chưa nhận: --",@"key":@"gift_unclaimed_count"},
+            @{@"type":@"switch",@"label":self.lang[@"gift_auto_check"]?:@"Tự Động Kiểm Tra",@"key":@"gift_auto_check",@"val":@(YES)},
+            @{@"type":@"switch",@"label":self.lang[@"gift_notify"]?:@"Thông Báo Quà Mới",@"key":@"gift_notify",@"val":@(YES)},
+            @{@"type":@"switch",@"label":self.lang[@"gift_auto_claim"]?:@"Tự Động Nhận",@"key":@"gift_auto_claim",@"val":@(NO)},
+            @{@"type":@"slider",@"label":@"Kiểm Tra Mỗi (phút)",@"key":@"gift_interval",@"min":@(5),@"max":@(120),@"val":@(30)},
+            @{@"type":@"button",@"label":self.lang[@"gift_check_now"]?:@"🎁 Kiểm Tra Ngay",@"action":@"gift_check_now"},
+            @{@"type":@"button",@"label":self.lang[@"gift_claim_all"]?:@"✅ Nhận Tất Cả Quà",@"action":@"gift_claim_all"}
+        ]
+    }];
+    
+    [self.sections addObject:@{
         @"title": self.lang[@"settings"] ?: @"⚙ SETTINGS",
         @"items": @[
             @{@"type":@"segment",@"label":self.lang[@"language"]?:@"Language",@"key":@"language",@"segs":@[@"🇻🇳 VI",@"🇺🇸 EN",@"🇨🇳 ZH",@"🇷🇺 RU",@"🇸🇦 AR",@"🇪🇸 ES",@"🇧🇷 PT",@"🇯🇵 JA",@"🇰🇷 KO",@"🇹🇭 TH",@"🇮🇩 ID"],@"val":@(0)},
@@ -224,6 +249,12 @@
     
     if ([action isEqualToString:@"apply_best"]) [[KeniosSkinChanger sharedInstance] applyAllBestSkins];
     else if ([action isEqualToString:@"randomize"]) [[KeniosSkinChanger sharedInstance] randomizeSkins];
+    else if ([action isEqualToString:@"gift_check_now"]) [[KeniosGiftChecker sharedInstance] showGiftCheckerUI];
+    else if ([action isEqualToString:@"gift_claim_all"]) {
+        [[KeniosGiftChecker sharedInstance] claimAllGifts:^(int claimed, int failed) {
+            KENIOS_LOG(@"[Menu] Claimed: %d, Failed: %d", claimed, failed);
+        }];
+    }
     else if ([action isEqualToString:@"hide_menu"]) [[KeniosMenu sharedInstance] hideMenu];
 }
 
@@ -248,7 +279,8 @@
     if (self.menuView) [self.menuView removeFromSuperview];
     self.menuView = [[KeniosMenuView alloc] initWithFrame:CGRectMake(10, 120, 320, 500)];
     self.menuView.alpha = 0;
-    [[UIApplication sharedApplication].keyWindow addSubview:self.menuView];
+    UIWindow *window = KeniosActiveWindow();
+    if (window) [window addSubview:self.menuView];
     [UIView animateWithDuration:0.3 animations:^{ self.menuView.alpha = 1; }];
 }
 

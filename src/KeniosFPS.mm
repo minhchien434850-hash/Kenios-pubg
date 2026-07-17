@@ -2,6 +2,7 @@
 
 @interface KeniosFPS ()
 @property (nonatomic, assign) int currentFPS;
+@property (nonatomic, assign) int currentPing;
 @property (nonatomic, assign) CFTimeInterval lastTime;
 @property (nonatomic, assign) int frameCount;
 @end
@@ -14,7 +15,7 @@
 
 - (instancetype)init {
     self = [super init];
-    if (self) { self.currentFPS = 60; self.lastTime = CACurrentMediaTime(); self.frameCount = 0; }
+    if (self) { self.currentFPS = 60; self.currentPing = 0; self.lastTime = CACurrentMediaTime(); self.frameCount = 0; }
     return self;
 }
 
@@ -30,4 +31,6 @@
 }
 
 - (int)getCurrentFPS { return self.currentFPS; }
+- (int)getCurrentPing { return self.currentPing; }
+- (void)setPing:(int)ping { self.currentPing = ping; }
 @end

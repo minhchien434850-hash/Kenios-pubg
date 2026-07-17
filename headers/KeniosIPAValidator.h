@@ -14,11 +14,15 @@
 
 @interface KeniosIPAValidator : NSObject
 
++ (instancetype)sharedInstance;
 + (BOOL)validateIPAWithPath:(NSString *)ipaPath;
 + (BOOL)validateBundleID:(NSString *)bundleID;
 + (BOOL)validateSignature:(NSString *)appPath;
 + (NSString *)calculateSHA256:(NSString *)filePath;
 + (BOOL)isValidPUBGBundle:(NSString *)bundleID;
+
+- (BOOL)validateCurrentIPA;
+- (void)showIPAInvalidAlert;
 
 @end
 

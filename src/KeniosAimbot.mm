@@ -6,6 +6,8 @@
 @interface KeniosAimbot ()
 @property (nonatomic, strong) KeniosAimbotConfig *config;
 @property (nonatomic, strong) NSMutableArray *playerList;
+@property (nonatomic, assign) KeniosPlayer selectedTarget;
+@property (nonatomic, assign) BOOL hasSelectedTarget;
 @end
 
 @implementation KeniosAimbot
@@ -41,9 +43,8 @@
     KeniosVector3 cameraPos = *(KeniosVector3 *)(cameraManager + o.CameraCache);
     KeniosMatrix4x4 viewMatrix = *(KeniosMatrix4x4 *)(cameraManager + o.ViewMatrix);
     
-    [self scanPlayers:localPawn localTeamID:localTeamID];
-    KeniosPlayer *target = [self findBestTarget:cameraPos viewMatrix:viewMatrix];
-    if (target) [self aimAtTarget:target cameraPos:cameraPos localController:localController];
+    [self scanPlayers:localPawn localTeamID:localTeamID cameraPos:cameraPos];
+    if ([self findBestTarget:cameraPos viewMatrix:viewMatrix]) [self aimAtTarget:&_selectedTarget cameraPos:cameraPos localController:localController];
 }
 
 - (uint64_t)getLocalPlayerController {
@@ -55,7 +56,7 @@
     return *(uint64_t *)localPlayers;
 }
 
-- (void)scanPlayers:(uint64_t)localPawn localTeamID:(int)localTeamID {
+- (void)scanPlayers:(uint64_t)localPawn localTeamID:(int)localTeamID cameraPos:(KeniosVector3)cameraPos {
     [self.playerList removeAllObjects];
     KeniosOffsets *o = [KeniosOffsets sharedInstance];
     uint64_t persistentLevel = *(uint64_t *)(g_GWorld + o.PersistentLevel);
@@ -74,18 +75,18 @@
         uint64_t playerState = *(uint64_t *)(actor + o.PlayerState);
         if (!playerState) continue;
         
-        KeniosPlayer *p = (KeniosPlayer *)malloc(sizeof(KeniosPlayer));
-        memset(p, 0, sizeof(KeniosPlayer));
-        p->address = actor; p->meshAddress = mesh;
-        p->teamID = *(int *)(playerState + o.TeamID);
-        p->isBot = *(BOOL *)(playerState + o.bIsABot);
-        p->health = *(float *)(playerState + o.Health);
-        p->isTeammate = (p->teamID == localTeamID);
-        p->isAlive = (p->health > 0);
-        [self getBonePositions:p];
-        KeniosVector3 delta = {p->pelvis.x - cameraPos.x, p->pelvis.y - cameraPos.y, p->pelvis.z - cameraPos.z};
-        p->distance = sqrt(delta.x*delta.x + delta.y*delta.y + delta.z*delta.z) / 100.0f;
-        [self.playerList addObject:[NSValue valueWithPointer:p]];
+        KeniosPlayer p;
+        memset(&p, 0, sizeof(KeniosPlayer));
+        p.address = actor; p.meshAddress = mesh;
+        p.teamID = *(int *)(playerState + o.TeamID);
+        p.isBot = *(BOOL *)(playerState + o.bIsABot);
+        p.health = *(float *)(playerState + o.Health);
+        p.isTeammate = (p.teamID == localTeamID);
+        p.isAlive = (p.health > 0);
+        [self getBonePositions:&p];
+        KeniosVector3 delta = {p.pelvis.x - cameraPos.x, p.pelvis.y - cameraPos.y, p.pelvis.z - cameraPos.z};
+        p.distance = sqrt(delta.x*delta.x + delta.y*delta.y + delta.z*delta.z) / 100.0f;
+        [self.playerList addObject:[NSValue valueWithBytes:&p objCType:@encode(KeniosPlayer)]];
     }
 }
 
@@ -105,17 +106,20 @@
     #undef GB
 }
 
-- (KeniosPlayer *)findBestTarget:(KeniosVector3)cameraPos viewMatrix:(KeniosMatrix4x4)vm {
-    KeniosPlayer *best = NULL; float bestScore = -999999;
+- (BOOL)findBestTarget:(KeniosVector3)cameraPos viewMatrix:(KeniosMatrix4x4)vm {
+    KeniosPlayer best;
+    BOOL found = NO;
+    float bestScore = -999999;
     CGFloat sw = [UIScreen mainScreen].bounds.size.width, sh = [UIScreen mainScreen].bounds.size.height;
     KeniosVector2 sc = {sw/2, sh/2};
     for (NSValue *v in self.playerList) {
-        KeniosPlayer *p = (KeniosPlayer *)[v pointerValue];
-        if (!p->isAlive || (p->isTeammate && !self.config.aimTeammates)) continue;
-        if (p->isBot && !self.config.aimOnBots) continue;
-        if (!p->isBot && !self.config.aimOnPlayers) continue;
-        if (p->distance > self.config.maxDistance) continue;
-        KeniosVector3 tp = self.config.targetBone == KeniosAimTargetHead ? p->head : self.config.targetBone == KeniosAimTargetNeck ? p->neck : self.config.targetBone == KeniosAimTargetChest ? p->chest : p->pelvis;
+        KeniosPlayer p;
+        [v getValue:&p];
+        if (!p.isAlive || (p.isTeammate && !self.config.aimTeammates)) continue;
+        if (p.isBot && !self.config.aimOnBots) continue;
+        if (!p.isBot && !self.config.aimOnPlayers) continue;
+        if (p.distance > self.config.maxDistance) continue;
+        KeniosVector3 tp = self.config.targetBone == KeniosAimTargetHead ? p.head : self.config.targetBone == KeniosAimTargetNeck ? p.neck : self.config.targetBone == KeniosAimTargetChest ? p.chest : p.pelvis;
         float w = vm.m[3][0]*tp.x + vm.m[3][1]*tp.y + vm.m[3][2]*tp.z + vm.m[3][3];
         if (w < 0.01f) continue;
         float sx = (vm.m[0][0]*tp.x + vm.m[0][1]*tp.y + vm.m[0][2]*tp.z + vm.m[0][3]) / w;
@@ -125,11 +129,13 @@
         float dx = sx - sc.x, dy = sy - sc.y;
         float angle = atan2(sqrt(dx*dx+dy*dy), 500.0f) * (180.0f/M_PI);
         if (angle > self.config.fov/2.0f) continue;
-        float score = (1.0f-angle/(self.config.fov/2.0f))*1000.0f + (1.0f-p->distance/self.config.maxDistance)*500.0f;
-        if (p->isBot) score *= 0.7f;
-        if (score > bestScore) { bestScore = score; p->isTarget = YES; best = p; }
+        float score = (1.0f-angle/(self.config.fov/2.0f))*1000.0f + (1.0f-p.distance/self.config.maxDistance)*500.0f;
+        if (p.isBot) score *= 0.7f;
+        if (score > bestScore) { bestScore = score; best = p; found = YES; }
     }
-    return best;
+    self.hasSelectedTarget = found;
+    if (found) self.selectedTarget = best;
+    return found;
 }
 
 - (void)aimAtTarget:(KeniosPlayer *)t cameraPos:(KeniosVector3)cp localController:(uint64_t)lc {
