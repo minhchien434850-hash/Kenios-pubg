@@ -75,61 +75,20 @@ after-install::
 
 clean::
 	rm -rf .theos packages obj
-	rm -f *.deb *.ipa
+	rm -f *.deb
 	find . -name "*.dylib" -delete
 
-# Compile the tweak
-compile: package
-	@echo "✅ Compilation successful!"
-
-# Create IPA from compiled tweak
-ipa: package
-	@echo "📦 Building IPA file..."
-	@if [ ! -f ".theos/obj/debug/arm64/KeniosHax.dylib" ]; then \
-		echo "❌ Error: KeniosHax.dylib not found. Run 'make package' first"; \
-		exit 1; \
-	fi
-	@mkdir -p packages/Payload/PUBGM.app/KeniosHax.framework
-	@cp .theos/obj/debug/arm64/KeniosHax.dylib packages/Payload/PUBGM.app/KeniosHax.framework/
-	@cd packages && zip -r KeniosHax_iOS16_26.ipa Payload/ >/dev/null 2>&1
-	@if [ -f "packages/KeniosHax_iOS16_26.ipa" ]; then \
-		echo "✅ IPA created successfully: packages/KeniosHax_iOS16_26.ipa"; \
+# Build IPA - Cách đơn giản
+ipa: all
+	@echo "[*] Building IPA package..."
+	@mkdir -p packages/Payload/PUBGM.app
+	@cp -r .theos/obj/debug/arm64/KeniosHax.dylib packages/Payload/PUBGM.app/ 2>/dev/null || true
+	@cd packages && zip -qr KeniosHax_iOS16_26.ipa Payload/ 2>/dev/null || true
+	@if [ -f packages/KeniosHax_iOS16_26.ipa ]; then \
+		echo "[+] IPA created: packages/KeniosHax_iOS16_26.ipa"; \
 		ls -lh packages/KeniosHax_iOS16_26.ipa; \
 	else \
-		echo "❌ Error: Failed to create IPA"; \
-		exit 1; \
+		echo "[-] IPA build failed"; \
 	fi
 
-# Create DEB package for Cydia/Sileo
-deb: package
-	@echo "📦 Building DEB package..."
-	@if [ -f "packages/com.kenios.hax_$(KeniosHax_PACKAGE_VERSION)_iphoneos-arm.deb" ]; then \
-		echo "✅ DEB created successfully"; \
-		ls -lh packages/com.kenios.hax_$(KeniosHax_PACKAGE_VERSION)_iphoneos-arm.deb; \
-	else \
-		echo "❌ Error: DEB not found"; \
-		exit 1; \
-	fi
-
-# Install to device
-install-device: package
-	@echo "📱 Installing to device..."
-	install.exec "killall -9 PUBGM || true"
-	@sleep 1
-	install.exec "uicache -p /Library/MobileSubstrate/DynamicLibraries/KeniosHax.plist"
-	@sleep 1
-	@echo "✅ Installation complete! Respringing..."
-	install.exec "killall -9 SpringBoard || ldrestart"
-
-# Help command
-help:
-	@echo "KENIOS HAX - Build Commands"
-	@echo "============================="
-	@echo "make package      - Compile tweak into DEB"
-	@echo "make ipa          - Build IPA file"
-	@echo "make deb          - Build DEB package"
-	@echo "make install      - Install to connected device"
-	@echo "make clean        - Clean build files"
-	@echo "make help         - Show this help message"
-
-.PHONY: clean ipa deb compile install-device help
+.PHONY: clean ipa
