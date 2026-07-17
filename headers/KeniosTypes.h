@@ -92,4 +92,14 @@
 @property (nonatomic, strong) NSArray *purchasedItems;
 @end
 
+@interface KeniosGiftCheckerConfig : NSObject <NSCoding>
+@property (nonatomic, assign) BOOL enabled;
+@property (nonatomic, assign) BOOL autoCheck;
+@property (nonatomic, assign) BOOL notifyOnNewGift;
+@property (nonatomic, assign) BOOL autoClaim;
+@property (nonatomic, assign) int checkIntervalMinutes;
+@property (nonatomic, strong) NSDate *lastCheckDate;
+@property (nonatomic, strong) NSMutableArray *claimedGiftIDs;
+@end
+
 #endif

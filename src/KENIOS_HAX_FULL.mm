@@ -35,6 +35,7 @@
 #import "KeniosBombAlert.h"
 #import "KeniosVehicleMaster.h"
 #import "KeniosEventShop.h"
+#import "KeniosGiftChecker.h"
 
 // --- Biến toàn cục ---
 uint64_t g_UE4Base = 0;
@@ -187,6 +188,9 @@ static UIViewController *KeniosTopViewController(void) {
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [[KeniosMenu sharedInstance] showMenu];
+        if ([KeniosConfig sharedInstance].giftChecker.enabled) {
+            [[KeniosGiftChecker sharedInstance] startAutoCheck];
+        }
     });
     
     g_isHackInitialized = YES;
@@ -198,6 +202,7 @@ static UIViewController *KeniosTopViewController(void) {
     [g_heartbeatTimer invalidate]; g_heartbeatTimer = nil;
     [g_anticheatTimer invalidate]; g_anticheatTimer = nil;
     [[KeniosMenu sharedInstance] hideMenu];
+    [[KeniosGiftChecker sharedInstance] stopAutoCheck];
     g_isHackInitialized = NO;
 }
 

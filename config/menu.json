@@ -156,6 +156,22 @@
       ]
     },
     {
+      "id": "gift_checker",
+      "title": "🎁 KIỂM TRA QUÀ TẶNG",
+      "items": [
+        {"type": "label", "text": "Quà chưa nhận: --", "key": "gift_unclaimed_count", "color": "#FF00FF"},
+        {"type": "label", "text": "Lần kiểm tra cuối: --", "key": "gift_last_check", "color": "#AAAAAA"},
+        {"type": "switch", "label": "Bật Kiểm Tra", "key": "gift_enabled", "default": true},
+        {"type": "switch", "label": "Tự Động Kiểm Tra", "key": "gift_auto_check", "default": true},
+        {"type": "switch", "label": "Thông Báo Quà Mới", "key": "gift_notify", "default": true},
+        {"type": "switch", "label": "Tự Động Nhận", "key": "gift_auto_claim", "default": false},
+        {"type": "slider", "label": "Kiểm Tra Mỗi (phút)", "key": "gift_interval", "min": 5, "max": 120, "default": 30, "unit": "min"},
+        {"type": "button", "label": "🎁 Kiểm Tra Ngay", "action": "gift_check_now"},
+        {"type": "button", "label": "✅ Nhận Tất Cả Quà", "action": "gift_claim_all"},
+        {"type": "button", "label": "📋 Xem Danh Sách Quà", "action": "gift_show_list"}
+      ]
+    },
+    {
       "id": "anti_ban",
       "title": "🛡 ANTI-BAN PRO",
       "items": [

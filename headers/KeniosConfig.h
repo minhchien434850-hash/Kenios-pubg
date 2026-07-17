@@ -18,6 +18,7 @@
 @property (nonatomic, strong) KeniosBombAlertConfig *bombAlert;
 @property (nonatomic, strong) KeniosVehicleMasterConfig *vehicleMaster;
 @property (nonatomic, strong) KeniosEventShopConfig *eventShop;
+@property (nonatomic, strong) KeniosGiftCheckerConfig *giftChecker;
 
 @property (nonatomic, assign) BOOL autoUpdate;
 @property (nonatomic, assign) BOOL soundEnabled;
