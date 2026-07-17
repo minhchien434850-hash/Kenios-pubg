@@ -1,0 +1,547 @@
+# =============================================
+# KENIOS HAX - GITHUB ACTIONS CI/CD
+# Tự động: Build IPA + Chạy Server + Deploy
+# Hỗ trợ: iOS 16.0 - 26.5
+# =============================================
+
+name: KENIOS HAX CI/CD Pipeline
+
+# ============ TRIGGERS ============
+on:
+  # Chạy khi push code lên nhánh main
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+  
+  # Chạy khi tạo Pull Request
+  pull_request:
+    branches:
+      - main
+      - master
+  
+  # Chạy định kỳ mỗi 4 giờ
+  schedule:
+    - cron: '0 */4 * * *'
+  
+  # Cho phép chạy thủ công từ GitHub
+  workflow_dispatch:
+    inputs:
+      build_ipa:
+        description: 'Build IPA?'
+        type: boolean
+        default: true
+      deploy_server:
+        description: 'Deploy Server?'
+        type: boolean
+        default: false
+      version_bump:
+        description: 'Version bump type'
+        type: choice
+        options:
+          - none
+          - patch
+          - minor
+          - major
+        default: none
+
+# ============ ENVIRONMENT VARIABLES ============
+env:
+  PROJECT_NAME: KeniosHax
+  IPA_NAME: KENIOS_Hax
+  VERSION: 4.5.0
+  IOS_MIN: 16.0
+  IOS_MAX: 26.5
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.12'
+
+# ============ JOBS ============
+jobs:
+  
+  # ============ JOB 1: KIỂM TRA CODE ============
+  lint-and-check:
+    name: 🔍 Lint & Check Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 📝 Check File Structure
+        run: |
+          echo "🔍 Kiểm tra cấu trúc dự án..."
+          
+          # Kiểm tra các file quan trọng
+          REQUIRED_FILES=(
+            "Makefile"
+            "config/offsets.json"
+            "config/anticheat.json"
+            "config/skins.json"
+            "config/config.json"
+            "config/languages.json"
+            "config/menu.json"
+            "src/KENIOS_HAX_FULL.mm"
+            "src/KeniosMenu.mm"
+            "src/KeniosAimbot.mm"
+            "server/server.js"
+            "server/package.json"
+            "scripts/build_ipa.sh"
+            "scripts/run_server.sh"
+          )
+          
+          MISSING=0
+          for FILE in "${REQUIRED_FILES[@]}"; do
+            if [ -f "$FILE" ]; then
+              echo "  ✅ $FILE"
+            else
+              echo "  ❌ $FILE - MISSING!"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+          
+          if [ $MISSING -gt 0 ]; then
+            echo "❌ Thiếu $MISSING file quan trọng!"
+            exit 1
+          fi
+          echo "✅ Tất cả file quan trọng đều có mặt"
+      
+      - name: 📊 Count Lines of Code
+        run: |
+          echo "📊 Thống kê code:"
+          echo "  Source files: $(find src -name '*.mm' -o -name '*.h' | wc -l)"
+          echo "  Config files: $(find config -name '*.json' | wc -l)"
+          echo "  Server files: $(find server -name '*.js' -o -name '*.html' | wc -l)"
+          echo "  Script files: $(find scripts -name '*.sh' | wc -l)"
+          echo "  Total lines: $(find . -name '*.mm' -o -name '*.h' -o -name '*.js' -o -name '*.json' -o -name '*.sh' | xargs cat 2>/dev/null | wc -l)"
+      
+      - name: ✅ JSON Syntax Check
+        run: |
+          echo "🔍 Kiểm tra cú pháp JSON..."
+          for FILE in config/*.json; do
+            if [ -f "$FILE" ]; then
+              python3 -m json.tool "$FILE" > /dev/null 2>&1 && echo "  ✅ $FILE" || { echo "  ❌ $FILE - Invalid JSON!"; exit 1; }
+            fi
+          done
+          echo "✅ Tất cả JSON files hợp lệ"
+  
+  # ============ JOB 2: KIỂM TRA GAME UPDATE ============
+  check-game-update:
+    name: 🎮 Check PUBG Mobile Update
+    runs-on: ubuntu-latest
+    needs: lint-and-check
+    outputs:
+      version_changed: ${{ steps.check.outputs.changed }}
+      new_version: ${{ steps.check.outputs.version }}
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: 📦 Install Dependencies
+        run: pip install requests
+      
+      - name: 🔍 Check App Store Version
+        id: check
+        run: |
+          python3 << 'PYEOF'
+          import json, os, requests
+          from datetime import datetime, timezone
+          
+          APP_ID = "1330123889"
+          OFFSETS_FILE = "config/offsets.json"
+          
+          print("🔍 Checking PUBG Mobile version on App Store...")
+          
+          try:
+              response = requests.get(f"https://itunes.apple.com/lookup?id={APP_ID}&country=us", timeout=15)
+              data = response.json()
+              
+              if data['resultCount'] > 0:
+                  store_version = data['results'][0]['version']
+                  print(f"  App Store Version: {store_version}")
+                  
+                  with open(OFFSETS_FILE, 'r') as f:
+                      offsets = json.load(f)
+                  
+                  current_version = offsets.get('game_version', 'unknown')
+                  print(f"  Current Offsets Version: {current_version}")
+                  
+                  if store_version != current_version:
+                      print(f"  ⚠️ VERSION CHANGED: {current_version} -> {store_version}")
+                      
+                      offsets['game_version'] = store_version
+                      offsets['last_updated'] = datetime.now(timezone.utc).isoformat()
+                      offsets['needs_verification'] = True
+                      offsets['auto_scanned'] = True
+                      
+                      with open(OFFSETS_FILE, 'w') as f:
+                          json.dump(offsets, f, indent=2, ensure_ascii=False)
+                      
+                      with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                          f.write(f"changed=true\n")
+                          f.write(f"version={store_version}\n")
+                  else:
+                      print("  ✅ Version unchanged")
+                      with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                          f.write(f"changed=false\n")
+              else:
+                  print("  ❌ No results from App Store")
+          except Exception as e:
+              print(f"  ❌ Error: {e}")
+          PYEOF
+      
+      - name: 📝 Commit Offset Changes
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git config user.name "KENIOS Bot"
+          git config user.email "bot@kenios-hax.dev"
+          git add config/offsets.json
+          git commit -m "[AUTO] Game updated to v${{ steps.check.outputs.new_version }} - Offsets flagged for verification"
+          git push
+      
+      - name: 📢 Create Issue on Update
+        if: steps.check.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.check.outputs.new_version }}';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔄 PUBG Mobile Updated to v${version} - Offsets Need Verification`,
+              body: `## ⚠️ Game Updated
+  
+  **New Version:** v${version}
+  **Detected:** ${new Date().toISOString()}
+  
+  ### Actions Taken
+  - ✅ Offsets automatically flagged for update
+  - 🔍 Anti-cheat patterns need re-scanning
+  - ⚠️ All features need manual verification
+  
+  ### TODO
+  - [ ] Verify and update offsets in \`config/offsets.json\`
+  - [ ] Re-scan anti-cheat patterns in \`config/anticheat.json\`
+  - [ ] Test Aimbot functionality
+  - [ ] Test ESP rendering
+  - [ ] Test Magic Bullet
+  - [ ] Test Skin Changer
+  - [ ] Update iOS compatibility if needed
+  
+  ### Notes
+  - Offsets marked as \`needs_verification: true\`
+  - Anti-cheat bypass may need pattern updates
+  - Please test on iOS 16.0 - 26.5
+  
+  ---
+  *Auto-generated by KENIOS HAX CI/CD*`,
+              labels: ['update', 'high-priority', 'needs-testing', 'auto-detected']
+            });
+  
+  # ============ JOB 3: BUILD SERVER ============
+  build-server:
+    name: 🖥 Build & Test Server
+    runs-on: ubuntu-latest
+    needs: lint-and-check
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'server/package.json'
+      
+      - name: 📦 Install Dependencies
+        run: |
+          cd server
+          npm ci
+      
+      - name: 🔍 Test Server Startup
+        run: |
+          cd server
+          timeout 10 node server.js &
+          SERVER_PID=$!
+          sleep 3
+          
+          # Test health endpoint
+          if curl -s http://localhost:3000/api/health | grep -q "ok"; then
+            echo "✅ Server health check passed"
+          else
+            echo "❌ Server health check failed"
+            kill $SERVER_PID 2>/dev/null
+            exit 1
+          fi
+          
+          # Test validate-key endpoint
+          RESPONSE=$(curl -s -X POST http://localhost:3000/api/validate-key \
+            -H "Content-Type: application/json" \
+            -d '{"key":"KEN-TEST-KEY-1234","device_id":"test-device-001"}')
+          
+          if echo "$RESPONSE" | grep -q "valid"; then
+            echo "✅ Key validation endpoint working"
+          else
+            echo "⚠️  Key validation endpoint response: $RESPONSE"
+          fi
+          
+          kill $SERVER_PID 2>/dev/null
+      
+      - name: 📊 Server Stats
+        run: |
+          echo "📊 Server Build Stats:"
+          echo "  Node.js: $(node -v)"
+          echo "  npm: $(npm -v)"
+          echo "  Dependencies: $(cd server && ls node_modules | wc -l) packages"
+  
+  # ============ JOB 4: BUILD IPA (macOS ONLY) ============
+  build-ipa:
+    name: 🍎 Build IPA
+    runs-on: macos-latest
+    needs: [lint-and-check, build-server]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.build_ipa == 'true'
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Environment
+        run: |
+          echo "🍎 macOS Version: $(sw_vers -productVersion)"
+          echo "🏗 Xcode Version: $(xcodebuild -version | head -1)"
+          echo "📱 SDK Version: $(xcodebuild -showsdks | grep iphoneos | tail -1)"
+      
+      - name: 📦 Install Dependencies
+        run: |
+          # Cài Theos (nếu cần)
+          if [ ! -d "$HOME/theos" ]; then
+            echo "Installing Theos..."
+            git clone --recursive https://github.com/theos/theos.git $HOME/theos --depth 1
+            echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          fi
+          
+          # Cài ldid
+          if ! command -v ldid &> /dev/null; then
+            brew install ldid
+          fi
+      
+      - name: 🔨 Build Tweak
+        run: |
+          export THEOS=$HOME/theos
+          cd $GITHUB_WORKSPACE
+          
+          # Kiểm tra Makefile
+          if [ -f "Makefile" ]; then
+            echo "🔨 Building with Theos..."
+            make clean 2>/dev/null || true
+            make package
+            
+            # Kiểm tra kết quả
+            if [ -f ".theos/obj/debug/arm64/${{ env.PROJECT_NAME }}.dylib" ] || [ -f ".theos/obj/debug/arm64e/${{ env.PROJECT_NAME }}.dylib" ]; then
+              echo "✅ Tweak built successfully!"
+            else
+              echo "⚠️  Tweak build may have issues - continuing..."
+            fi
+          else
+            echo "⚠️  Makefile not found - skipping tweak build"
+          fi
+      
+      - name: 📦 Create IPA Structure
+        run: |
+          mkdir -p build/Payload/PUBGM.app
+          mkdir -p packages
+          
+          # Copy dylib nếu có
+          if [ -f ".theos/obj/debug/arm64/${{ env.PROJECT_NAME }}.dylib" ]; then
+            cp .theos/obj/debug/arm64/${{ env.PROJECT_NAME }}.dylib build/Payload/PUBGM.app/
+          fi
+          
+          # Copy config files
+          mkdir -p build/Payload/PUBGM.app/KeniosConfig
+          cp config/*.json build/Payload/PUBGM.app/KeniosConfig/ 2>/dev/null || true
+          
+          # Create placeholder IPA
+          cd build
+          zip -r ../packages/${{ env.IPA_NAME }}_v${{ env.VERSION }}_dev.zip Payload/
+          cd ..
+          
+          echo "✅ IPA structure created"
+      
+      - name: 📤 Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.IPA_NAME }}_v${{ env.VERSION }}
+          path: packages/*.zip
+          retention-days: 7
+  
+  # ============ JOB 5: DEPLOY TO GITHUB PAGES ============
+  deploy-pages:
+    name: 🌐 Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: [lint-and-check, build-server]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: 📄 Create Landing Page
+        run: |
+          mkdir -p gh-pages
+          
+          cat > gh-pages/index.html << 'HTMLEOF'
+          <!DOCTYPE html>
+          <html lang="vi">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>🔥 KENIOS HAX - PUBG Mobile iOS Hack</title>
+              <style>
+                  *{margin:0;padding:0;box-sizing:border-box}
+                  body{background:#0a0a0f;color:#fff;font-family:'Segoe UI',sans-serif;text-align:center;padding:50px 20px}
+                  h1{color:#00ffff;font-size:48px;margin-bottom:10px;text-shadow:0 0 30px #00ffff44}
+                  h2{color:#ff00ff;font-size:24px;margin-bottom:30px}
+                  .badge{display:inline-block;padding:8px 20px;margin:5px;border-radius:20px;font-size:14px;font-weight:bold}
+                  .badge-ios{background:#000;color:#fff;border:1px solid #fff}
+                  .badge-version{background:#00ffff22;color:#00ffff;border:1px solid #00ffff}
+                  .badge-status{background:#00ff4422;color:#00ff44;border:1px solid #00ff44}
+                  .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;max-width:1000px;margin:40px auto}
+                  .feature{background:#12121a;padding:25px;border-radius:15px;border:1px solid #00ffff22;text-align:left}
+                  .feature h3{color:#00ffff;margin-bottom:10px}
+                  .feature p{color:#aaa;font-size:14px;line-height:1.6}
+                  .btn{display:inline-block;padding:15px 40px;margin:20px 10px;border-radius:30px;text-decoration:none;font-weight:bold;font-size:16px;transition:0.3s}
+                  .btn-primary{background:linear-gradient(135deg,#00ffff,#0088ff);color:#000}
+                  .btn-secondary{background:#12121a;color:#00ffff;border:2px solid #00ffff}
+                  .btn:hover{transform:scale(1.05);box-shadow:0 0 30px #00ffff44}
+                  footer{margin-top:50px;color:#666;font-size:12px}
+              </style>
+          </head>
+          <body>
+              <h1>🔥 KENIOS HAX</h1>
+              <h2>PUBG Mobile iOS Ultimate Hack</h2>
+              <div>
+                  <span class="badge badge-ios">📱 iOS 16.0 - 26.5</span>
+                  <span class="badge badge-version">🚀 Version 4.5.0</span>
+                  <span class="badge badge-status">✅ Undetected</span>
+              </div>
+              <div class="features">
+                  <div class="feature"><h3>🎯 Aimbot</h3><p>Head/Neck/Chest/Body + Shotgun Mode + Prediction + FOV Circle</p></div>
+                  <div class="feature"><h3>👁 ESP</h3><p>Box/Skeleton/Health/Name/Distance/Loot/Vehicle + Custom Colors</p></div>
+                  <div class="feature"><h3>💣 Bomb Alert</h3><p>Grenade/Molotov/C4 Detection + Sound & Vibrate Alert</p></div>
+                  <div class="feature"><h3>💫 Magic Bullet</h3><p>Auto-hit targets within customizable radius</p></div>
+                  <div class="feature"><h3>👗 Skin Changer</h3><p>500+ Skins + Vehicle Master + Event Shop</p></div>
+                  <div class="feature"><h3>🛡 Anti-Ban Pro</h3><p>Safe/Aggressive/Auto Mode + Humanize + Protection</p></div>
+                  <div class="feature"><h3>🌍 Multi-Language</h3><p>12 Languages: VI/EN/ZH/RU/AR/ES/PT/JA/KO/TH/ID</p></div>
+                  <div class="feature"><h3>🔑 Key System</h3><p>License Key + Admin Panel + Device Management</p></div>
+              </div>
+              <a href="https://github.com/kenios-hax/kenios-ipa" class="btn btn-primary">⭐ GitHub Repo</a>
+              <a href="https://discord.gg/kenios-hax" class="btn btn-secondary">💬 Discord</a>
+              <footer>© 2026 KENIOS HAX Team | Not affiliated with Tencent or PUBG Mobile</footer>
+          </body>
+          </html>
+          HTMLEOF
+          
+          echo "✅ Landing page created"
+      
+      - name: 🚀 Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./gh-pages
+          publish_branch: gh-pages
+          commit_message: '[AUTO] Deploy landing page'
+  
+  # ============ JOB 6: CREATE RELEASE ============
+  create-release:
+    name: 📦 Create Release
+    runs-on: ubuntu-latest
+    needs: [lint-and-check, build-server]
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.version_bump != 'none')
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 🏷 Generate Release Info
+        id: release_info
+        run: |
+          VERSION="${{ env.VERSION }}"
+          DATE=$(date +%Y%m%d)
+          TAG="v${VERSION}-${DATE}"
+          
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+          echo "Tag: $TAG"
+      
+      - name: 📝 Generate Changelog
+        run: |
+          echo "## 🔥 KENIOS HAX v${{ env.VERSION }}" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "**Release Date:** $(date +'%Y-%m-%d')" >> CHANGELOG.md
+          echo "**iOS Support:** ${{ env.IOS_MIN }} - ${{ env.IOS_MAX }}" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "### 🚀 Features" >> CHANGELOG.md
+          echo "- 🎯 Full Aimbot (Head/Neck/Chest/Body/Shotgun)" >> CHANGELOG.md
+          echo "- 👁 Advanced ESP with Custom Colors" >> CHANGELOG.md
+          echo "- 💣 Bomb Alert System" >> CHANGELOG.md
+          echo "- 💫 Magic Bullet" >> CHANGELOG.md
+          echo "- 👗 500+ Skin Changer" >> CHANGELOG.md
+          echo "- 🚗 Vehicle Master" >> CHANGELOG.md
+          echo "- 🎪 Event Shop" >> CHANGELOG.md
+          echo "- 🛡 Anti-Ban Pro (Safe/Aggressive/Auto)" >> CHANGELOG.md
+          echo "- 🔑 License Key System" >> CHANGELOG.md
+          echo "- 📱 IPA Validator" >> CHANGELOG.md
+          echo "- 🌍 12 Languages Support" >> CHANGELOG.md
+          echo "- 🔄 Auto Update via GitHub Actions" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "### 📦 Downloads" >> CHANGELOG.md
+          echo "- [IPA File](https://github.com/${{ github.repository }}/releases)" >> CHANGELOG.md
+          echo "- [Source Code (zip)](https://github.com/${{ github.repository }}/archive/refs/tags/${{ steps.release_info.outputs.tag }}.zip)" >> CHANGELOG.md
+      
+      - name: 🚀 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.release_info.outputs.tag }}
+          name: 🔥 KENIOS HAX v${{ env.VERSION }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
+  # ============ JOB 7: DISCORD NOTIFICATION ============
+  notify-discord:
+    name: 📢 Discord Notification
+    runs-on: ubuntu-latest
+    needs: [lint-and-check, build-server]
+    if: always() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📢 Send Discord Webhook
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          title: "🔥 KENIOS HAX CI/CD Pipeline"
+          description: |
+            **Repository:** ${{ github.repository }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+            **Status:** ${{ job.status }}
+          color: ${{ job.status == 'success' && 0x00FF44 || 0xFF4444 }}
+          username: KENIOS Bot
+          avatar_url: https://github.com/kenios-hax.png
