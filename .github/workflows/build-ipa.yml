@@ -1,48 +1,48 @@
-name: KENIOS HAX - Build IPA
+#!/bin/bash
+set -e
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$PROJECT_DIR"
 
-on:
-  push:
-    branches:
-      - main
-      - master
-  workflow_dispatch:
+# Build dylib
+make clean all
+if [ ! -f KeniosHax.dylib ]; then
+    echo "❌ Không tìm thấy KeniosHax.dylib"
+    exit 1
+fi
 
-env:
-  PROJECT_NAME: KeniosHax
-  IPA_NAME: KENIOS_Hax
-  VERSION: 4.5.0
+# Yêu cầu IPA gốc
+ORIG_IPA="$HOME/Desktop/PUBG_Mobile.ipa"
+if [ ! -f "$ORIG_IPA" ]; then
+    echo "❌ Vui lòng đặt IPA gốc vào Desktop: PUBG_Mobile.ipa"
+    exit 1
+fi
 
-jobs:
-  build-ipa:
-    name: 🍎 Build IPA
-    runs-on: macos-latest
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Theos
-        run: |
-          git clone --recursive https://github.com/theos/theos.git $HOME/theos --depth 1
-          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
-          echo "PATH=$HOME/theos/bin:$PATH" >> $GITHUB_ENV
-      
-      - name: Build Tweak
-        run: |
-          export THEOS=$HOME/theos
-          make clean 2>/dev/null || true
-          make package
-      
-      - name: Create IPA
-        run: |
-          mkdir -p build/Payload/PUBGM.app packages
-          [ -f ".theos/obj/debug/arm64/${{ env.PROJECT_NAME }}.dylib" ] && cp .theos/obj/debug/arm64/${{ env.PROJECT_NAME }}.dylib build/Payload/PUBGM.app/
-          mkdir -p build/Payload/PUBGM.app/KeniosConfig
-          cp config/*.json build/Payload/PUBGM.app/KeniosConfig/ 2>/dev/null || true
-          cd build && zip -qr ../packages/${{ env.IPA_NAME }}_v${{ env.VERSION }}.ipa Payload/ && cd ..
-      
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.IPA_NAME }}_v${{ env.VERSION }}
-          path: packages/*.ipa
-          retention-days: 30
+# Giải nén IPA
+rm -rf build/ipa
+mkdir -p build/ipa
+unzip -q "$ORIG_IPA" -d build/ipa
+APP=$(find build/ipa/Payload -name "*.app" -type d | head -1)
+APP_NAME=$(basename "$APP" .app)
+
+# Copy dylib và config
+cp KeniosHax.dylib "$APP/"
+mkdir -p "$APP/KeniosConfig"
+cp config/*.json "$APP/KeniosConfig/"
+
+# Chèn load command vào binary (nếu cần)
+BINARY="$APP/$APP_NAME"
+if ! otool -L "$BINARY" | grep -q KeniosHax; then
+    optool install -p "@executable_path/KeniosHax.dylib" -t "$BINARY"
+fi
+
+# Ký bằng chứng chỉ ESign
+# Thay "ESign Certificate" bằng tên chứng chỉ của bạn
+CERT_NAME="ESign Certificate"
+codesign -f -s "$CERT_NAME" --entitlements entitlements.plist "$APP" 2>/dev/null || ldid -S "$APP"
+
+# Đóng gói IPA
+cd build/ipa
+zip -qr "$PROJECT_DIR/KENIOS_Hax_ESign.ipa" Payload/
+cd "$PROJECT_DIR"
+
+echo "✅ IPA đã được tạo: KENIOS_Hax_ESign.ipa"
