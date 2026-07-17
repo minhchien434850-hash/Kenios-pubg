@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KENIOS HAX - Key Management</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#0a0a0f;font-family:'Segoe UI',sans-serif;color:#fff;display:flex}
+        .sidebar{width:250px;background:#12121a;min-height:100vh;padding:20px;border-right:1px solid #00ffff22}
+        .sidebar h2{color:#00ffff;margin-bottom:30px}
+        .sidebar a{display:block;color:#aaa;padding:12px 15px;text-decoration:none;border-radius:8px;margin-bottom:5px}
+        .sidebar a:hover,.sidebar a.active{background:#1a1a25;color:#00ffff}
+        .main{flex:1;padding:30px}
+        .main h1{color:#00ffff;margin-bottom:20px}
+        .btn{padding:12px 25px;background:linear-gradient(135deg,#00ffff,#0088ff);border:none;border-radius:10px;color:#000;font-weight:bold;cursor:pointer;margin-bottom:20px}
+        table{width:100%;border-collapse:collapse;background:#12121a;border-radius:15px;overflow:hidden}
+        th{background:#1a1a25;padding:15px;text-align:left;color:#00ffff}
+        td{padding:12px 15px;border-bottom:1px solid #00ffff11}
+        .badge{padding:5px 10px;border-radius:20px;font-size:11px;font-weight:bold}
+        .badge-active{background:#00ff4422;color:#00ff44}
+        .badge-banned{background:#ff444422;color:#ff4444}
+        .badge-expired{background:#ffaa0022;color:#ffaa00}
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>🔥 KENIOS HAX</h2>
+        <a href="/admin/dashboard">📊 Dashboard</a>
+        <a href="/admin/keys" class="active">🔑 Quản Lý Key</a>
+        <a href="/admin/users">👥 Người Dùng</a>
+        <a href="#" onclick="logout()">🚪 Đăng Xuất</a>
+    </div>
+    <div class="main">
+        <h1>🔑 Quản Lý Key</h1>
+        <button class="btn" onclick="generateKey()">+ Tạo Key Mới</button>
+        <table><thead><tr><th>ID</th><th>Loại</th><th>Trạng Thái</th><th>Thiết Bị</th><th>Ngày Tạo</th><th>Hết Hạn</th><th>Hành Động</th></tr></thead><tbody id="keyTable"></tbody></table>
+    </div>
+    <script>
+        if(!localStorage.getItem('kenios_token')) window.location.href='/admin';
+        async function loadKeys(){
+            const res=await fetch('/api/keys/list',{headers:{'Authorization':'Bearer '+localStorage.getItem('kenios_token')}});
+            const keys=await res.json();
+            document.getElementById('keyTable').innerHTML=keys.map(k=>`
+                <tr>
+                    <td>#${k.id}</td>
+                    <td><span class="badge badge-active">${k.plan_type}</span></td>
+                    <td>${k.is_banned?'<span class="badge badge-banned">BANNED</span>':k.is_active?'<span class="badge badge-active">ACTIVE</span>':'<span class="badge badge-expired">INACTIVE</span>'}</td>
+                    <td>${k.max_devices}</td>
+                    <td>${new Date(k.created_at).toLocaleDateString()}</td>
+                    <td>${k.expires_at?new Date(k.expires_at).toLocaleDateString():'Vĩnh Viễn'}</td>
+                    <td><button onclick="toggleKey(${k.id})" style="background:#ff4444;color:#fff;border:none;padding:5px 15px;border-radius:5px;cursor:pointer">${k.is_banned?'Unban':'Ban'}</button></td>
+                </tr>
+            `).join('');
+        }
+        async function generateKey(){
+            const plan=prompt('Loại key (trial/weekly/monthly/lifetime):','monthly');
+            const days=parseInt(prompt('Số ngày:','30'));
+            const res=await fetch('/api/keys/generate',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('kenios_token')},body:JSON.stringify({plan_type:plan,duration_days:days})});
+            const data=await res.json();
+            if(data.key){alert('Key đã tạo: '+data.key);loadKeys();}
+        }
+        async function toggleKey(id){await fetch(`/api/keys/${id}/toggle`,{method:'POST',headers:{'Authorization':'Bearer '+localStorage.getItem('kenios_token')}});loadKeys();}
+        function logout(){localStorage.removeItem('kenios_token');window.location.href='/admin'}
+        loadKeys();
+    </script>
+</body>
+</html>
