@@ -5,7 +5,7 @@ from pathlib import Path
 REQUIRED_FILES = [
     "Makefile", "config/offsets.json", "config/anticheat.json", "config/skins.json",
     "config/menu.json", "config/config.json", "config/languages.json",
-    "headers/KeniosCommon.h", "src/KeniosLoader.mm", "src/KeniosAimbot.mm",
+    "headers/KeniosCommon.h", "src/KENIOS_HAX_FULL.mm", "src/KeniosAimbot.mm",
     "server/server.js", "scripts/build_ipa.sh", ".github/workflows/main.yml"
 ]
 
